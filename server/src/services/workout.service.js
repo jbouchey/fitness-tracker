@@ -1,4 +1,5 @@
 const prisma = require('../config/database');
+const { Prisma } = require('@prisma/client');
 
 const WORKOUT_SELECT = {
   id: true,
@@ -183,40 +184,37 @@ async function getPersonalRecords(userId) {
 }
 
 async function getActivityTrends(userId, period, utcOffset = 0) {
-  // utcOffset = browser's getTimezoneOffset() (positive = behind UTC, e.g. EST = 300)
-  // Subtracting it from UTC timestamps converts to the user's local time for grouping.
+  // Embed utcOffset as a raw literal to avoid PostgreSQL parameter type ambiguity
+  // with interval arithmetic. Value is validated as int(-720..840) by the controller.
+  const offsetLiteral = Prisma.raw(String(parseInt(utcOffset) || 0));
+
   if (period === 'week') {
-    // Daily breakdown of the current Sun–Sat week in the user's local timezone
+    // Rolling last 7 days, grouped by local day
     const rows = await prisma.$queryRaw`
       SELECT
-        DATE_TRUNC('day', "startTime" - ${utcOffset} * INTERVAL '1 minute')::DATE AS day,
+        DATE_TRUNC('day', "startTime" - ${offsetLiteral} * INTERVAL '1 minute')::DATE AS day,
         CAST(SUM("distanceMiles") AS FLOAT) AS miles,
         CAST(SUM("elevationGainFt") AS FLOAT) AS elevation,
         COUNT(*)::INT AS runs
       FROM "workouts"
       WHERE "userId" = ${userId}
-        AND "startTime" - ${utcOffset} * INTERVAL '1 minute' >= (
-          DATE_TRUNC('week', NOW() - ${utcOffset} * INTERVAL '1 minute' + INTERVAL '1 day') - INTERVAL '1 day'
-        )
-        AND "startTime" - ${utcOffset} * INTERVAL '1 minute' < (
-          DATE_TRUNC('week', NOW() - ${utcOffset} * INTERVAL '1 minute' + INTERVAL '1 day') + INTERVAL '6 days'
-        )
+        AND "startTime" >= NOW() - INTERVAL '6 days'
       GROUP BY 1
       ORDER BY 1
     `;
     return rows;
   } else {
-    // Weekly breakdown (Wk 1–4) of the current calendar month in the user's local timezone
+    // Current calendar month, grouped by week-of-month (1–5 depending on month length)
     const rows = await prisma.$queryRaw`
       SELECT
-        LEAST(CEIL(EXTRACT(DAY FROM "startTime" - ${utcOffset} * INTERVAL '1 minute') / 7.0)::INT, 4) AS week_num,
+        CEIL(EXTRACT(DAY FROM "startTime" - ${offsetLiteral} * INTERVAL '1 minute') / 7.0)::INT AS week_num,
         CAST(SUM("distanceMiles") AS FLOAT) AS miles,
         CAST(SUM("elevationGainFt") AS FLOAT) AS elevation,
         COUNT(*)::INT AS runs
       FROM "workouts"
       WHERE "userId" = ${userId}
-        AND "startTime" - ${utcOffset} * INTERVAL '1 minute' >= DATE_TRUNC('month', NOW() - ${utcOffset} * INTERVAL '1 minute')
-        AND "startTime" - ${utcOffset} * INTERVAL '1 minute' < DATE_TRUNC('month', NOW() - ${utcOffset} * INTERVAL '1 minute') + INTERVAL '1 month'
+        AND "startTime" - ${offsetLiteral} * INTERVAL '1 minute' >= DATE_TRUNC('month', NOW() - ${offsetLiteral} * INTERVAL '1 minute')
+        AND "startTime" - ${offsetLiteral} * INTERVAL '1 minute' < DATE_TRUNC('month', NOW() - ${offsetLiteral} * INTERVAL '1 minute') + INTERVAL '1 month'
       GROUP BY 1
       ORDER BY 1
     `;

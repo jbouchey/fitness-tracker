@@ -5,29 +5,29 @@ import { workoutsApi } from '../../api/workouts';
 const DAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 function buildWeeklyScaffold(rows) {
-  const now = new Date();
-  const sunday = new Date(now);
-  sunday.setDate(now.getDate() - now.getDay());
-  sunday.setHours(0, 0, 0, 0);
-
   const lookup = {};
   for (const row of rows) {
+    // row.day is returned as a JS Date at midnight UTC of the local date
     const key = new Date(row.day).toISOString().slice(0, 10);
     lookup[key] = row;
   }
 
-  return DAY_LABELS.map((label, i) => {
-    const d = new Date(sunday);
-    d.setDate(sunday.getDate() + i);
+  // Build 7 slots: 6 days ago → today
+  const result = [];
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date();
+    d.setDate(d.getDate() - i);
+    d.setHours(12, 0, 0, 0); // use noon so toISOString gives the correct local date
     const key = d.toISOString().slice(0, 10);
     const found = lookup[key];
-    return {
-      label,
+    result.push({
+      label: DAY_LABELS[d.getDay()],
       miles: found ? Number(Number(found.miles).toFixed(2)) : 0,
       runs: found ? Number(found.runs) : 0,
       elevation: found ? Math.round(Number(found.elevation)) : 0,
-    };
-  });
+    });
+  }
+  return result;
 }
 
 function buildMonthlyScaffold(rows) {
@@ -36,7 +36,13 @@ function buildMonthlyScaffold(rows) {
     lookup[Number(row.week_num)] = row;
   }
 
-  return [1, 2, 3, 4].map((wk) => {
+  // Determine how many weeks the current month has (4 or 5)
+  const now = new Date();
+  const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+  const numWeeks = Math.ceil(lastDay / 7);
+
+  return Array.from({ length: numWeeks }, (_, i) => {
+    const wk = i + 1;
     const found = lookup[wk];
     return {
       label: `Wk ${wk}`,
