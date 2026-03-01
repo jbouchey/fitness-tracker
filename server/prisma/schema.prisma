@@ -1,0 +1,116 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum WorkoutType {
+  TRAIL_RUN
+  ROAD_RUN
+  HIKE
+  CYCLING
+  STRENGTH
+  OTHER
+}
+
+enum FileFormat {
+  FIT
+  GPX
+}
+
+model User {
+  id           String    @id @default(cuid())
+  email        String    @unique
+  passwordHash String
+  displayName  String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  workouts Workout[]
+
+  @@map("users")
+}
+
+model Workout {
+  id               String      @id @default(cuid())
+  userId           String
+  user             User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title            String
+  workoutType      WorkoutType @default(TRAIL_RUN)
+  fileFormat       FileFormat
+  originalFileName String
+  startTime        DateTime
+  endTime          DateTime
+  elapsedSeconds   Int
+
+  // Distance & Pace
+  distanceMiles      Float
+  avgPaceSecPerMile  Float
+  bestPaceSecPerMile Float?
+
+  // Elevation (feet)
+  elevationGainFt Float
+  elevationLossFt Float
+  avgElevationFt  Float
+  maxElevationFt  Float?
+  minElevationFt  Float?
+
+  // Heart Rate (BPM)
+  avgHeartRate Int?
+  maxHeartRate Int?
+  minHeartRate Int?
+
+  calories Int?
+  notes    String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  splits      Split[]
+  trackPoints TrackPoint[]
+
+  @@index([userId, startTime(sort: Desc)])
+  @@index([userId, workoutType])
+  @@map("workouts")
+}
+
+model Split {
+  id        String  @id @default(cuid())
+  workoutId String
+  workout   Workout @relation(fields: [workoutId], references: [id], onDelete: Cascade)
+
+  splitNumber     Int
+  distanceMiles   Float
+  elapsedSeconds  Int
+  paceSecPerMile  Float
+  avgHeartRate    Int?
+  elevationGainFt Float?
+  elevationLossFt Float?
+  startLat        Float?
+  startLng        Float?
+
+  @@index([workoutId, splitNumber])
+  @@map("splits")
+}
+
+model TrackPoint {
+  id        String  @id @default(cuid())
+  workoutId String
+  workout   Workout @relation(fields: [workoutId], references: [id], onDelete: Cascade)
+
+  sequence   Int
+  latitude   Float
+  longitude  Float
+  elevationM Float?
+  timestamp  DateTime?
+  elapsedSec Int?
+  heartRate  Int?
+  cadence    Int?
+  speed      Float?
+
+  @@index([workoutId, sequence])
+  @@map("track_points")
+}
