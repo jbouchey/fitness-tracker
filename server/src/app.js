@@ -13,7 +13,27 @@ const uploadRoutes = require('./routes/upload.routes');
 const app = express();
 
 // Security middleware
-app.use(helmet());
+app.use(
+  helmet({
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        scriptSrc: ["'self'", "'unsafe-eval'"], // Mapbox GL JS requires eval
+        workerSrc: ["'self'", 'blob:'],          // Mapbox GL JS web workers
+        childSrc: ["'self'", 'blob:'],
+        imgSrc: ["'self'", 'data:', 'blob:', 'https://*.mapbox.com'],
+        connectSrc: [
+          "'self'",
+          'https://*.mapbox.com',
+          'https://api.mapbox.com',
+          'https://events.mapbox.com',
+        ],
+        styleSrc: ["'self'", "'unsafe-inline'", 'https://api.mapbox.com'],
+        fontSrc: ["'self'", 'https://api.mapbox.com'],
+      },
+    },
+  })
+);
 app.use(
   cors({
     origin: [CLIENT_URL, 'http://localhost:5173'],
