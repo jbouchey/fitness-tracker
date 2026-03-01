@@ -13,4 +13,11 @@ module.exports = {
   NODE_ENV:         process.env.NODE_ENV || 'development',
   CLIENT_URL:       process.env.CLIENT_URL || 'http://localhost:5173',
   MAX_FILE_SIZE_MB: parseInt(process.env.MAX_FILE_SIZE_MB) || 50,
+  SMTP_HOST:  process.env.SMTP_HOST  || null,
+  SMTP_PORT:  parseInt(process.env.SMTP_PORT) || 587,
+  SMTP_USER:  process.env.SMTP_USER  || null,
+  SMTP_PASS:  process.env.SMTP_PASS  || null,
+  SMTP_FROM:  process.env.SMTP_FROM  || 'TrailTracker <noreply@trailtracker.app>',
+  APP_URL:    process.env.APP_URL    || 'http://localhost:5173',
+  REQUIRE_EMAIL_VERIFICATION: process.env.REQUIRE_EMAIL_VERIFICATION === 'true',
 };

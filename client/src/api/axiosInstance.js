@@ -14,8 +14,15 @@ api.interceptors.request.use((config) => {
 });
 
 // On 401, clear local auth state and redirect to login
+// On X-Token-Refresh header, silently update the stored token
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    const refreshedToken = response.headers['x-token-refresh'];
+    if (refreshedToken) {
+      localStorage.setItem('auth_token', refreshedToken);
+    }
+    return response;
+  },
   (error) => {
     if (error.response?.status === 401) {
       localStorage.removeItem('auth_token');

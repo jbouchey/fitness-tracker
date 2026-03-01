@@ -1,6 +1,7 @@
 import { create } from 'zustand';
+import { authApi } from '../api/auth';
 
-export const useAuthStore = create((set) => ({
+export const useAuthStore = create((set, get) => ({
   user: null,
   token: null,
 
@@ -10,7 +11,13 @@ export const useAuthStore = create((set) => ({
     set({ user, token });
   },
 
-  logout() {
+  async logout() {
+    try {
+      // Invalidate the token server-side (increments tokenVersion)
+      await authApi.logout();
+    } catch {
+      // Ignore errors — still clear local state
+    }
     localStorage.removeItem('auth_token');
     localStorage.removeItem('auth_user');
     set({ user: null, token: null });
