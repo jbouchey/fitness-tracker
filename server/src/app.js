@@ -54,12 +54,15 @@ app.use('/api/upload', uploadRoutes);
 // Health check
 app.get('/api/health', (req, res) => res.json({ status: 'ok' }));
 
-// Serve React build (if it exists)
+// Serve React build (if it exists — single-service mode)
 const clientDist = path.join(__dirname, '../../client/dist');
 const clientIndex = path.join(clientDist, 'index.html');
 if (fs.existsSync(clientIndex)) {
   app.use(express.static(clientDist));
   app.get('*', (_req, res) => res.sendFile(clientIndex));
+} else {
+  // Two-service mode: redirect browser requests to the client service
+  app.get('*', (req, res) => res.redirect(CLIENT_URL + req.path));
 }
 
 // Global error handler
