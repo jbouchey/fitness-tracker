@@ -25,4 +25,4 @@ export const SORT_OPTIONS = [
 ];
 
 // Downsample track points to N for chart rendering performance
-export const CHART_MAX_POINTS = 10;
+export const CHART_MAX_POINTS = 500;
