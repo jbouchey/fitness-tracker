@@ -24,6 +24,20 @@ const uploadWorkout = catchAsync(async (req, res) => {
 
   const { format, metrics, splits, trackPoints, startTime, endTime } = parsed;
 
+  // Duplicate detection: same user + same start time = same workout
+  if (startTime) {
+    const duplicate = await prisma.workout.findFirst({
+      where: { userId: req.user.id, startTime },
+      select: { id: true, title: true },
+    });
+    if (duplicate) {
+      return res.status(409).json({
+        error: `This workout looks like a duplicate — a workout starting at the same time already exists: "${duplicate.title}".`,
+        duplicateId: duplicate.id,
+      });
+    }
+  }
+
   const defaultTitle =
     title ||
     (startTime

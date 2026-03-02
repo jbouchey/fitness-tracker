@@ -31,6 +31,8 @@ export default function ElevationChart({ trackPoints }) {
       };
     });
 
+  if (!raw.length) return null;
+
   const data = downsample(raw, CHART_MAX_POINTS);
 
   return (

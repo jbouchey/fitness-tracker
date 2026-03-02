@@ -6,12 +6,17 @@ const GPXParser = require('gpxparser');
  * @returns {object} raw data for metricsCalculator
  */
 function parseGpxFile(buffer) {
-  const gpx = new GPXParser();
-  gpx.parse(buffer.toString('utf8'));
+  let gpx;
+  try {
+    gpx = new GPXParser();
+    gpx.parse(buffer.toString('utf8'));
+  } catch (e) {
+    throw new Error(`Invalid or malformed GPX file: ${e.message}`);
+  }
 
   const track = gpx.tracks?.[0];
   if (!track || !track.points?.length) {
-    throw new Error('No track data found in GPX file');
+    throw new Error('No track data found in this GPX file. The file may be empty or contain only waypoints, not a recorded route.');
   }
 
   const points = track.points;

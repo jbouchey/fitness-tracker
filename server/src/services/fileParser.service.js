@@ -2,6 +2,19 @@ const { parseFitFile } = require('./fitParser.service');
 const { parseGpxFile } = require('./gpxParser.service');
 const { calculateMetrics } = require('../utils/metricsCalculator');
 
+// Cap stored track points to keep DB rows manageable without losing route fidelity.
+const MAX_TRACK_POINTS = 5000;
+
+function downsamplePoints(points) {
+  if (points.length <= MAX_TRACK_POINTS) return points;
+  const step = Math.ceil(points.length / MAX_TRACK_POINTS);
+  const sampled = points.filter((_, i) => i % step === 0);
+  // Always keep the last point so the route end is preserved
+  const last = points[points.length - 1];
+  if (sampled[sampled.length - 1] !== last) sampled.push(last);
+  return sampled.map((tp, i) => ({ ...tp, sequence: i }));
+}
+
 /**
  * Detect file format using magic bytes (most reliable) with filename as fallback.
  */
@@ -46,7 +59,7 @@ async function parseFile(buffer, originalName) {
     format,
     metrics,
     splits,
-    trackPoints: raw.trackPoints,
+    trackPoints: downsamplePoints(raw.trackPoints),
     startTime: raw.startTime,
     endTime: raw.endTime,
   };
