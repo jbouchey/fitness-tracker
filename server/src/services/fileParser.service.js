@@ -1,5 +1,6 @@
 const { parseFitFile } = require('./fitParser.service');
 const { parseGpxFile } = require('./gpxParser.service');
+const { parseTcxFile } = require('./tcxParser.service');
 const { calculateMetrics } = require('../utils/metricsCalculator');
 
 // Cap stored track points to keep DB rows manageable without losing route fidelity.
@@ -25,16 +26,18 @@ function detectFormat(originalName, buffer) {
     if (magic === '.FIT') return 'FIT';
   }
 
-  // GPX files: XML with <gpx root tag
+  // XML-based formats: inspect content before falling back to extension
   const head = buffer.slice(0, 1000).toString('utf8').toLowerCase();
   if (head.includes('<gpx')) return 'GPX';
+  if (head.includes('trainingcenterdatabase')) return 'TCX';
 
   // Extension fallback
   const ext = originalName.split('.').pop().toLowerCase();
   if (ext === 'fit') return 'FIT';
   if (ext === 'gpx') return 'GPX';
+  if (ext === 'tcx') return 'TCX';
 
-  throw new Error('Unsupported file format. Only .fit and .gpx files are accepted.');
+  throw new Error('Unsupported file format. Only .fit, .gpx, and .tcx files are accepted.');
 }
 
 /**
@@ -49,8 +52,10 @@ async function parseFile(buffer, originalName) {
   let raw;
   if (format === 'FIT') {
     raw = await parseFitFile(buffer);
-  } else {
+  } else if (format === 'GPX') {
     raw = parseGpxFile(buffer);
+  } else {
+    raw = parseTcxFile(buffer);
   }
 
   const { splits, trackPoints, ...metrics } = calculateMetrics(raw);

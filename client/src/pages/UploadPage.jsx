@@ -16,7 +16,7 @@ export default function UploadPage() {
 
   const onDrop = useCallback((accepted, rejected) => {
     if (rejected.length > 0) {
-      setError('Only .fit and .gpx files are accepted (max 50 MB).');
+      setError('Only .fit, .gpx, and .tcx files are accepted (max 50 MB).');
       return;
     }
     setFile(accepted[0]);
@@ -25,7 +25,7 @@ export default function UploadPage() {
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
-    accept: { 'application/octet-stream': ['.fit'], 'application/gpx+xml': ['.gpx'], 'text/xml': ['.gpx'] },
+    accept: { 'application/octet-stream': ['.fit'], 'application/gpx+xml': ['.gpx'], 'text/xml': ['.gpx', '.tcx'], 'application/vnd.garmin.tcx+xml': ['.tcx'] },
     maxFiles: 1,
     maxSize: 50 * 1024 * 1024,
   });
@@ -84,7 +84,7 @@ export default function UploadPage() {
               <p className="text-gray-600 font-medium">
                 {isDragActive ? 'Drop it here' : 'Drag & drop or click to browse'}
               </p>
-              <p className="text-xs text-gray-400 mt-1">Supports .fit and .gpx files up to 50 MB</p>
+              <p className="text-xs text-gray-400 mt-1">Supports .fit, .gpx, and .tcx files up to 50 MB</p>
             </div>
           )}
         </div>
