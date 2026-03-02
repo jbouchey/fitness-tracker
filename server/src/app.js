@@ -2,6 +2,7 @@ const express = require('express');
 const helmet = require('helmet');
 const cors = require('cors');
 const path = require('path');
+const fs = require('fs');
 const { CLIENT_URL } = require('./config/env');
 const { errorHandler } = require('./middleware/errorHandler');
 
@@ -55,8 +56,11 @@ app.get('/api/health', (req, res) => res.json({ status: 'ok' }));
 
 // Serve React build (if it exists)
 const clientDist = path.join(__dirname, '../../client/dist');
-app.use(express.static(clientDist));
-app.get('*', (req, res) => res.sendFile(path.join(clientDist, 'index.html')));
+const clientIndex = path.join(clientDist, 'index.html');
+if (fs.existsSync(clientIndex)) {
+  app.use(express.static(clientDist));
+  app.get('*', (_req, res) => res.sendFile(clientIndex));
+}
 
 // Global error handler
 app.use(errorHandler);
