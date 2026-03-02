@@ -10,7 +10,7 @@ async function sendEmail(to, subject, html) {
     return;
   }
   await resend.emails.send({
-    from: 'TrailTracker <noreply@sierradegroff.com>',
+    from: 'TrailTracker <noreply@notifications.sierradegroff.com>',
     to,
     subject,
     html,
