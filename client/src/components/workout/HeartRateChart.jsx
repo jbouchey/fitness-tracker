@@ -8,7 +8,7 @@ function downsample(arr, maxPoints) {
   return arr.filter((_, i) => i % step === 0);
 }
 
-export default function HeartRateChart({ trackPoints, avgHeartRate }) {
+export default function HeartRateChart({ trackPoints, avgHeartRate, onHover }) {
   const withHR = trackPoints?.filter((tp) => tp.heartRate != null && tp.elapsedSec != null);
   if (!withHR?.length) return null;
 
@@ -23,7 +23,17 @@ export default function HeartRateChart({ trackPoints, avgHeartRate }) {
     <div className="bg-white rounded-xl border border-gray-200 p-4">
       <h3 className="text-sm font-semibold text-gray-700 mb-4">Heart Rate</h3>
       <ResponsiveContainer width="100%" height={200}>
-        <LineChart data={data} margin={{ top: 4, right: 8, bottom: 4, left: 8 }}>
+        <LineChart
+          data={data}
+          syncId="workout"
+          onMouseMove={(state) => {
+            if (onHover && state.isTooltipActive && state.activePayload?.[0]) {
+              onHover(state.activePayload[0].payload.sec);
+            }
+          }}
+          onMouseLeave={() => onHover?.(null)}
+          margin={{ top: 4, right: 8, bottom: 4, left: 8 }}
+        >
           <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" />
           <XAxis dataKey="sec" tickFormatter={(v) => formatDuration(v)} tick={{ fontSize: 11 }} />
           <YAxis domain={['auto', 'auto']} tickFormatter={(v) => `${v}`} tick={{ fontSize: 11 }} width={40} />
@@ -38,6 +48,11 @@ export default function HeartRateChart({ trackPoints, avgHeartRate }) {
           <Line type="monotone" dataKey="hr" stroke="#ef4444" strokeWidth={2} dot={false} />
         </LineChart>
       </ResponsiveContainer>
+      {raw.length > data.length && (
+        <p className="text-xs text-gray-400 mt-1 text-right">
+          Showing {data.length.toLocaleString()} of {raw.length.toLocaleString()} points
+        </p>
+      )}
     </div>
   );
 }

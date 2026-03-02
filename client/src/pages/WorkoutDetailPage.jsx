@@ -6,9 +6,34 @@ import MetricsGrid from '../components/workout/MetricsGrid';
 import RouteMap from '../components/workout/RouteMap';
 import ElevationChart from '../components/workout/ElevationChart';
 import HeartRateChart from '../components/workout/HeartRateChart';
+import PaceChart from '../components/workout/PaceChart';
 import SplitsTable from '../components/workout/SplitsTable';
-import LoadingSpinner from '../components/shared/LoadingSpinner';
 import ErrorBanner from '../components/shared/ErrorBanner';
+
+function WorkoutDetailSkeleton() {
+  return (
+    <div className="max-w-5xl mx-auto space-y-5 animate-pulse">
+      <div className="h-4 w-32 bg-gray-200 rounded" />
+      <div className="bg-white rounded-xl border border-gray-200 p-5">
+        <div className="h-6 w-48 bg-gray-200 rounded mb-3" />
+        <div className="h-4 w-32 bg-gray-200 rounded" />
+      </div>
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        {[...Array(4)].map((_, i) => (
+          <div key={i} className="bg-white rounded-xl border border-gray-200 p-4">
+            <div className="h-3 w-16 bg-gray-200 rounded mb-2" />
+            <div className="h-6 w-20 bg-gray-200 rounded" />
+          </div>
+        ))}
+      </div>
+      <div className="bg-white rounded-xl border border-gray-200 h-80" />
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+        <div className="bg-white rounded-xl border border-gray-200 h-52" />
+        <div className="bg-white rounded-xl border border-gray-200 h-52" />
+      </div>
+    </div>
+  );
+}
 
 export default function WorkoutDetailPage() {
   const { id } = useParams();
@@ -16,6 +41,7 @@ export default function WorkoutDetailPage() {
   const [trackPoints, setTrackPoints] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [hoveredSec, setHoveredSec] = useState(null);
 
   useEffect(() => {
     workoutsApi
@@ -28,7 +54,7 @@ export default function WorkoutDetailPage() {
       .finally(() => setLoading(false));
   }, [id]);
 
-  if (loading) return <LoadingSpinner className="py-24" />;
+  if (loading) return <WorkoutDetailSkeleton />;
   if (error) return (
     <div className="max-w-3xl mx-auto">
       <ErrorBanner message={error} />
@@ -50,12 +76,14 @@ export default function WorkoutDetailPage() {
 
       <MetricsGrid workout={workout} />
 
-      <RouteMap trackPoints={trackPoints} />
+      <RouteMap trackPoints={trackPoints} hoveredSec={hoveredSec} />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-        <ElevationChart trackPoints={trackPoints} />
-        <HeartRateChart trackPoints={trackPoints} avgHeartRate={workout.avgHeartRate} />
+        <ElevationChart trackPoints={trackPoints} onHover={setHoveredSec} />
+        <HeartRateChart trackPoints={trackPoints} avgHeartRate={workout.avgHeartRate} onHover={setHoveredSec} />
       </div>
+
+      <PaceChart trackPoints={trackPoints} onHover={setHoveredSec} />
 
       <SplitsTable splits={workout.splits} />
     </div>
