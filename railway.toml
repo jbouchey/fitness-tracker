@@ -4,4 +4,4 @@ buildCommand = "npm install --omit=dev && npm run build"
 
 [deploy]
 startCommand = "npm start"
-releaseCommand = "cd server && npx prisma migrate deploy"
+releaseCommand = "if [ -n \"$DATABASE_URL\" ]; then cd server && npx prisma migrate deploy; fi"
