@@ -3,7 +3,9 @@ const { GMAIL_USER, GMAIL_APP_PASSWORD } = require('../config/env');
 
 const transporter = (GMAIL_USER && GMAIL_APP_PASSWORD)
   ? nodemailer.createTransport({
-      service: 'gmail',
+      host: 'smtp.gmail.com',
+      port: 587,
+      secure: false, // STARTTLS
       auth: { user: GMAIL_USER, pass: GMAIL_APP_PASSWORD },
     })
   : null;
