@@ -13,8 +13,8 @@ module.exports = {
   NODE_ENV:         process.env.NODE_ENV || 'development',
   CLIENT_URL:       process.env.CLIENT_URL || 'http://localhost:5173',
   MAX_FILE_SIZE_MB: parseInt(process.env.MAX_FILE_SIZE_MB) || 50,
-  RESEND_API_KEY: process.env.RESEND_API_KEY || null,
-  SMTP_FROM:  process.env.SMTP_FROM  || 'onboarding@resend.dev',
+  GMAIL_USER:         process.env.GMAIL_USER         || null,
+  GMAIL_APP_PASSWORD: process.env.GMAIL_APP_PASSWORD || null,
   APP_URL:    process.env.APP_URL    || 'http://localhost:5173',
   REQUIRE_EMAIL_VERIFICATION: process.env.REQUIRE_EMAIL_VERIFICATION === 'true',
 };

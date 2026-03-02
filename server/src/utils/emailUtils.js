@@ -1,16 +1,20 @@
-const { Resend } = require('resend');
-const { RESEND_API_KEY, SMTP_FROM } = require('../config/env');
+const nodemailer = require('nodemailer');
+const { GMAIL_USER, GMAIL_APP_PASSWORD } = require('../config/env');
 
-const resend = RESEND_API_KEY ? new Resend(RESEND_API_KEY) : null;
+const transporter = (GMAIL_USER && GMAIL_APP_PASSWORD)
+  ? nodemailer.createTransport({
+      service: 'gmail',
+      auth: { user: GMAIL_USER, pass: GMAIL_APP_PASSWORD },
+    })
+  : null;
 
 async function sendEmail(to, subject, html) {
-  if (!resend) {
+  if (!transporter) {
     const text = html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
-    console.log(`\n[Email — no RESEND_API_KEY configured]\nTo: ${to}\nSubject: ${subject}\n${text}\n`);
+    console.log(`\n[Email — no Gmail credentials configured]\nTo: ${to}\nSubject: ${subject}\n${text}\n`);
     return;
   }
-  const { error } = await resend.emails.send({ from: SMTP_FROM, to, subject, html });
-  if (error) throw new Error(`Resend error: ${error.message}`);
+  await transporter.sendMail({ from: `TrailTracker <${GMAIL_USER}>`, to, subject, html });
 }
 
 module.exports = { sendEmail };
