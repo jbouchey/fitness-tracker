@@ -1,6 +1,6 @@
 [build]
 builder = "NIXPACKS"
-buildCommand = "npm install --omit=dev && npm run build"
+buildCommand = "if [ \"$RAILWAY_SERVICE_NAME\" = 'fitness-tracker-client' ]; then npm install && npm run build; else npm install --omit=dev; fi"
 
 [deploy]
 startCommand = "if [ \"$RAILWAY_SERVICE_NAME\" = 'fitness-tracker-client' ]; then npx serve -s client/dist; else npx prisma generate --schema=server/prisma/schema.prisma && npx prisma migrate deploy --schema=server/prisma/schema.prisma && node server/src/index.js; fi"
