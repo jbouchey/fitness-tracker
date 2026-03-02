@@ -10,8 +10,8 @@
     "dev": "concurrently \"npm run dev --workspace=server\" \"npm run dev --workspace=client\"",
     "dev:server": "npm run dev --workspace=server",
     "dev:client": "npm run dev --workspace=client",
-    "build": "npm run build --workspace=client && npx prisma generate --schema=server/prisma/schema.prisma",
-    "start": "npx prisma migrate deploy --schema=server/prisma/schema.prisma && node server/src/index.js",
+    "build": "npm run build --workspace=client",
+    "start": "npx prisma generate --schema=server/prisma/schema.prisma && npx prisma migrate deploy --schema=server/prisma/schema.prisma && node server/src/index.js",
     "install:all": "npm install"
   },
   "devDependencies": {
