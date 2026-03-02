@@ -67,33 +67,33 @@ function parseTcxFile(buffer) {
     }
   }
 
-  if (!rawTrackpoints.length) {
-    throw new Error('No track points found in TCX file. The file may contain only summary data without a recorded route.');
-  }
+  // Establish t0 from the first trackpoint that has a timestamp
+  const firstTime = rawTrackpoints.find((tp) => tp.Time)?.Time;
+  const t0 = firstTime ? new Date(firstTime).getTime() : null;
 
-  // Build normalized track point array
-  let t0 = null;
-  const trackPoints = rawTrackpoints.map((tp, i) => {
-    const lat = parseFloat(tp.Position?.LatitudeDegrees);
-    const lon = parseFloat(tp.Position?.LongitudeDegrees);
-    const timestamp = tp.Time ? new Date(tp.Time) : null;
+  // Build normalized track points, keeping only those with valid GPS coordinates
+  // (latitude/longitude are required non-nullable columns in the DB schema).
+  // TCX strength/indoor workouts may have heartRate and cadence data but no GPS.
+  const trackPoints = rawTrackpoints
+    .map((tp) => {
+      const lat = parseFloat(tp.Position?.LatitudeDegrees);
+      const lon = parseFloat(tp.Position?.LongitudeDegrees);
+      const timestamp = tp.Time ? new Date(tp.Time) : null;
+      return {
+        latitude: isFinite(lat) ? lat : null,
+        longitude: isFinite(lon) ? lon : null,
+        elevationM: tp.AltitudeMeters != null ? parseFloat(tp.AltitudeMeters) : null,
+        timestamp,
+        elapsedSec: timestamp && t0 !== null ? Math.round((timestamp.getTime() - t0) / 1000) : null,
+        heartRate: tp.HeartRateBpm?.Value != null ? parseInt(tp.HeartRateBpm.Value) : null,
+        cadence: tp.Cadence != null ? parseInt(tp.Cadence) : null,
+        speed: null,
+      };
+    })
+    .filter((tp) => tp.latitude !== null && tp.longitude !== null)
+    .map((tp, i) => ({ ...tp, sequence: i }));
 
-    if (t0 === null && timestamp) t0 = timestamp.getTime();
-
-    return {
-      sequence: i,
-      latitude: isFinite(lat) ? lat : null,
-      longitude: isFinite(lon) ? lon : null,
-      elevationM: tp.AltitudeMeters != null ? parseFloat(tp.AltitudeMeters) : null,
-      timestamp,
-      elapsedSec: timestamp && t0 !== null ? Math.round((timestamp.getTime() - t0) / 1000) : null,
-      heartRate: tp.HeartRateBpm?.Value != null ? parseInt(tp.HeartRateBpm.Value) : null,
-      cadence: tp.Cadence != null ? parseInt(tp.Cadence) : null,
-      speed: null,
-    };
-  });
-
-  const startTime = trackPoints[0]?.timestamp ?? null;
+  const startTime = trackPoints[0]?.timestamp ?? (firstTime ? new Date(firstTime) : null);
   const endTime = trackPoints.at(-1)?.timestamp ?? null;
   const elapsedSeconds =
     totalTimeSeconds > 0

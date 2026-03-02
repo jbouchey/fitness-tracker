@@ -19,6 +19,7 @@ enum WorkoutType {
 enum FileFormat {
   FIT
   GPX
+  TCX
 }
 
 model User {
