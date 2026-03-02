@@ -10,6 +10,7 @@ const workoutRoutes = require('./routes/workout.routes');
 const uploadRoutes = require('./routes/upload.routes');
 
 const app = express();
+app.set('trust proxy', 1); // Railway runs behind a reverse proxy
 
 // Security middleware
 app.use(
