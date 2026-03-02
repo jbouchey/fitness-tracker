@@ -9,7 +9,8 @@ async function sendEmail(to, subject, html) {
     console.log(`\n[Email — no RESEND_API_KEY configured]\nTo: ${to}\nSubject: ${subject}\n${text}\n`);
     return;
   }
-  await resend.emails.send({ from: SMTP_FROM, to, subject, html });
+  const { error } = await resend.emails.send({ from: SMTP_FROM, to, subject, html });
+  if (error) throw new Error(`Resend error: ${error.message}`);
 }
 
 module.exports = { sendEmail };
