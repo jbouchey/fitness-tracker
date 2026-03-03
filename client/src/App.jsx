@@ -7,6 +7,7 @@ import DashboardPage from './pages/DashboardPage';
 import UploadPage from './pages/UploadPage';
 import WorkoutDetailPage from './pages/WorkoutDetailPage';
 import ProfilePage from './pages/ProfilePage';
+import RecordsPage from './pages/RecordsPage';
 import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import ResetPasswordPage from './pages/ResetPasswordPage';
 import VerifyEmailPage from './pages/VerifyEmailPage';
@@ -28,6 +29,7 @@ export default function App() {
             <Route path="/upload" element={<UploadPage />} />
             <Route path="/workouts/:id" element={<WorkoutDetailPage />} />
             <Route path="/profile" element={<ProfilePage />} />
+            <Route path="/records" element={<RecordsPage />} />
           </Route>
         </Route>
 

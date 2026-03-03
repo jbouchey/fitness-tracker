@@ -1,11 +1,9 @@
 import { useEffect, useState, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { useWorkoutStore } from '../store/workoutStore';
-import { SPORT_FILTER_OPTIONS } from '../utils/constants';
 import SportTypeFilter from '../components/dashboard/SportTypeFilter';
 import SummaryStats from '../components/dashboard/SummaryStats';
 import ActivityChart from '../components/dashboard/ActivityChart';
-import PersonalRecords from '../components/dashboard/PersonalRecords';
 import FilterBar from '../components/dashboard/FilterBar';
 import WorkoutTable from '../components/dashboard/WorkoutTable';
 import WorkoutCard from '../components/dashboard/WorkoutCard';
@@ -16,13 +14,26 @@ import ErrorBanner from '../components/shared/ErrorBanner';
 const SPORT_STORAGE_KEY = 'dashboard-sport-filter';
 const PERIOD_STORAGE_KEY = 'dashboard-stats-period';
 
-function getSportTypes(filterValue) {
-  const opt = SPORT_FILTER_OPTIONS.find((o) => o.value === filterValue);
-  return opt?.types || null;
+// Returns the filter updates for the Zustand store based on sport filter selection.
+// Single-type selections (CYCLING, HIKE) use the `type` field so the FilterBar
+// dropdown stays in sync. ALL_RUNS uses `types` array for multi-type filtering.
+function getSportFilterUpdates(value) {
+  if (value === 'ALL_RUNS') return { types: ['TRAIL_RUN', 'ROAD_RUN'], type: '' };
+  if (value === 'CYCLING')  return { types: null, type: 'CYCLING' };
+  if (value === 'HIKE')     return { types: null, type: 'HIKE' };
+  return { types: null, type: '' }; // 'all'
+}
+
+// Returns the types array to pass to the activity chart for sport-type filtering.
+function getSportTypes(value) {
+  if (value === 'ALL_RUNS') return ['TRAIL_RUN', 'ROAD_RUN'];
+  if (value === 'CYCLING')  return ['CYCLING'];
+  if (value === 'HIKE')     return ['HIKE'];
+  return null;
 }
 
 export default function DashboardPage() {
-  const { workouts, pagination, filters, isLoading, error, setFilters, setPage, personalRecords, fetchPersonalRecords } =
+  const { workouts, pagination, filters, isLoading, error, setFilters, setPage } =
     useWorkoutStore();
 
   const [sportFilter, setSportFilter] = useState(
@@ -33,18 +44,15 @@ export default function DashboardPage() {
   );
   const [trendData, setTrendData] = useState([]);
 
-  // On mount: apply sticky sport filter and fetch personal records
+  // Apply sticky sport filter on mount
   useEffect(() => {
-    const types = getSportTypes(sportFilter);
-    setFilters({ types: types || [] });
-    fetchPersonalRecords();
+    setFilters(getSportFilterUpdates(sportFilter));
   }, []);
 
   const handleSportFilterChange = useCallback((value) => {
     setSportFilter(value);
     localStorage.setItem(SPORT_STORAGE_KEY, value);
-    const types = getSportTypes(value);
-    setFilters({ types: types || [], type: '' });
+    setFilters(getSportFilterUpdates(value));
   }, [setFilters]);
 
   const handlePeriodChange = useCallback((period) => {
@@ -71,8 +79,6 @@ export default function DashboardPage() {
         types={getSportTypes(sportFilter)}
         onDataLoad={setTrendData}
       />
-
-      <PersonalRecords records={personalRecords} />
 
       <FilterBar filters={filters} onFilterChange={setFilters} />
 
