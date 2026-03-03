@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useWorkoutStore } from '../store/workoutStore';
 import SportTypeFilter from '../components/dashboard/SportTypeFilter';
@@ -44,6 +44,12 @@ export default function DashboardPage() {
   );
   const [trendData, setTrendData] = useState([]);
 
+  // Stable reference — only recomputed when sportFilter changes.
+  // Without useMemo, getSportTypes creates a new array every render, which
+  // causes ActivityChart's useEffect to re-run, triggering onDataLoad,
+  // causing another render in an infinite loop.
+  const sportTypes = useMemo(() => getSportTypes(sportFilter), [sportFilter]);
+
   // Apply sticky sport filter on mount
   useEffect(() => {
     setFilters(getSportFilterUpdates(sportFilter));
@@ -76,7 +82,7 @@ export default function DashboardPage() {
       <ActivityChart
         period={statsPeriod}
         onPeriodChange={handlePeriodChange}
-        types={getSportTypes(sportFilter)}
+        types={sportTypes}
         onDataLoad={setTrendData}
       />
 
