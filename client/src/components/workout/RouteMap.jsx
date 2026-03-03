@@ -10,6 +10,7 @@ export default function RouteMap({ trackPoints, hoveredSec }) {
 
   useEffect(() => {
     if (!trackPoints?.length || mapRef.current) return;
+    if (!import.meta.env.VITE_MAPBOX_TOKEN) return;
 
     const validPoints = trackPoints.filter((tp) => tp.latitude != null && tp.longitude != null);
     if (!validPoints.length) return;

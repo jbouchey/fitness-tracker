@@ -8,6 +8,7 @@ export const useWorkoutStore = create((set, get) => ({
   filters: {
     search: '',
     type: '',
+    types: null,
     startDate: '',
     endDate: '',
     sortBy: 'startTime',

@@ -19,7 +19,7 @@ function PRTile({ label, value, subtitle, workoutId }) {
 export default function PersonalRecords({ records }) {
   if (!records) return null;
 
-  const { fastestSplit, longestRun, mostElevation } = records;
+  const { fastestSplit, longestRun, mostElevation, lifetimeTotals } = records;
 
   return (
     <div className="mb-6">
@@ -44,6 +44,23 @@ export default function PersonalRecords({ records }) {
           workoutId={mostElevation?.id}
         />
       </div>
+
+      {lifetimeTotals && (
+        <div className="mt-3 grid grid-cols-3 gap-3">
+          <div className="metric-card text-center">
+            <p className="text-xs text-gray-500 mb-1">Lifetime Workouts</p>
+            <p className="text-xl font-bold text-gray-900">{lifetimeTotals.totalWorkouts.toLocaleString()}</p>
+          </div>
+          <div className="metric-card text-center">
+            <p className="text-xs text-gray-500 mb-1">Lifetime Miles</p>
+            <p className="text-xl font-bold text-gray-900">{formatDistance(lifetimeTotals.totalMiles)}</p>
+          </div>
+          <div className="metric-card text-center">
+            <p className="text-xs text-gray-500 mb-1">Lifetime Elevation</p>
+            <p className="text-xl font-bold text-gray-900">{formatElevation(lifetimeTotals.totalElevationGain)}</p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

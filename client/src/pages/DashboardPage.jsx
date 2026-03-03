@@ -1,6 +1,8 @@
-import { useEffect } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { useWorkoutStore } from '../store/workoutStore';
+import { SPORT_FILTER_OPTIONS } from '../utils/constants';
+import SportTypeFilter from '../components/dashboard/SportTypeFilter';
 import SummaryStats from '../components/dashboard/SummaryStats';
 import ActivityChart from '../components/dashboard/ActivityChart';
 import PersonalRecords from '../components/dashboard/PersonalRecords';
@@ -11,13 +13,43 @@ import Pagination from '../components/dashboard/Pagination';
 import LoadingSpinner from '../components/shared/LoadingSpinner';
 import ErrorBanner from '../components/shared/ErrorBanner';
 
+const SPORT_STORAGE_KEY = 'dashboard-sport-filter';
+const PERIOD_STORAGE_KEY = 'dashboard-stats-period';
+
+function getSportTypes(filterValue) {
+  const opt = SPORT_FILTER_OPTIONS.find((o) => o.value === filterValue);
+  return opt?.types || null;
+}
+
 export default function DashboardPage() {
-  const { workouts, pagination, stats, filters, isLoading, error, fetchWorkouts, setFilters, setPage, personalRecords, fetchPersonalRecords } =
+  const { workouts, pagination, filters, isLoading, error, setFilters, setPage, personalRecords, fetchPersonalRecords } =
     useWorkoutStore();
 
+  const [sportFilter, setSportFilter] = useState(
+    () => localStorage.getItem(SPORT_STORAGE_KEY) || 'all'
+  );
+  const [statsPeriod, setStatsPeriod] = useState(
+    () => localStorage.getItem(PERIOD_STORAGE_KEY) || 'week'
+  );
+  const [trendData, setTrendData] = useState([]);
+
+  // On mount: apply sticky sport filter and fetch personal records
   useEffect(() => {
-    fetchWorkouts();
+    const types = getSportTypes(sportFilter);
+    setFilters({ types: types || [] });
     fetchPersonalRecords();
+  }, []);
+
+  const handleSportFilterChange = useCallback((value) => {
+    setSportFilter(value);
+    localStorage.setItem(SPORT_STORAGE_KEY, value);
+    const types = getSportTypes(value);
+    setFilters({ types: types || [], type: '' });
+  }, [setFilters]);
+
+  const handlePeriodChange = useCallback((period) => {
+    setStatsPeriod(period);
+    localStorage.setItem(PERIOD_STORAGE_KEY, period);
   }, []);
 
   return (
@@ -29,9 +61,16 @@ export default function DashboardPage() {
         </Link>
       </div>
 
-      <SummaryStats stats={stats} />
+      <SportTypeFilter value={sportFilter} onChange={handleSportFilterChange} />
 
-      <ActivityChart />
+      <SummaryStats trendData={trendData} period={statsPeriod} />
+
+      <ActivityChart
+        period={statsPeriod}
+        onPeriodChange={handlePeriodChange}
+        types={getSportTypes(sportFilter)}
+        onDataLoad={setTrendData}
+      />
 
       <PersonalRecords records={personalRecords} />
 

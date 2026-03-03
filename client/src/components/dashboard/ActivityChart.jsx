@@ -53,20 +53,21 @@ function buildMonthlyScaffold(rows) {
   });
 }
 
-export default function ActivityChart() {
-  const [period, setPeriod] = useState('week');
+export default function ActivityChart({ period, onPeriodChange, types, onDataLoad }) {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     setLoading(true);
-    workoutsApi.getActivityTrends(period)
+    workoutsApi.getActivityTrends(period, types)
       .then(({ trends }) => {
-        setData(period === 'week' ? buildWeeklyScaffold(trends) : buildMonthlyScaffold(trends));
+        const built = period === 'week' ? buildWeeklyScaffold(trends) : buildMonthlyScaffold(trends);
+        setData(built);
+        onDataLoad?.(built);
       })
-      .catch(() => setData([]))
+      .catch(() => { setData([]); onDataLoad?.([]); })
       .finally(() => setLoading(false));
-  }, [period]);
+  }, [period, types]);
 
   return (
     <div className="mb-6">
@@ -76,7 +77,7 @@ export default function ActivityChart() {
           {['week', 'month'].map((p) => (
             <button
               key={p}
-              onClick={() => setPeriod(p)}
+              onClick={() => onPeriodChange(p)}
               className={`px-3 py-1 text-xs rounded-full font-medium transition-colors ${
                 period === p
                   ? 'bg-brand-500 text-white'

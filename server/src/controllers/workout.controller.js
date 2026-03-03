@@ -13,12 +13,16 @@ const updateSchema = z.object({
   notes: z.string().max(2000).optional(),
 });
 
+const VALID_TYPES = ['TRAIL_RUN', 'ROAD_RUN', 'HIKE', 'CYCLING', 'STRENGTH', 'OTHER'];
+
 const getWorkouts = catchAsync(async (req, res) => {
-  const { page, limit, type, search, startDate, endDate, sortBy, sortDir } = req.query;
+  const { page, limit, type, types: typesParam, search, startDate, endDate, sortBy, sortDir } = req.query;
+  const types = typesParam ? typesParam.split(',').filter((t) => VALID_TYPES.includes(t)) : null;
   const result = await workoutService.getWorkouts(req.user.id, {
     page: parseInt(page) || 1,
     limit: Math.min(parseInt(limit) || 20, 100),
     type,
+    types,
     search,
     startDate,
     endDate,
@@ -51,7 +55,8 @@ const getPersonalRecords = catchAsync(async (req, res) => {
 
 const getActivityTrends = catchAsync(async (req, res) => {
   const { period, utcOffset } = trendsSchema.parse(req.query);
-  const trends = await workoutService.getActivityTrends(req.user.id, period, utcOffset);
+  const types = req.query.types ? req.query.types.split(',').filter((t) => VALID_TYPES.includes(t)) : null;
+  const trends = await workoutService.getActivityTrends(req.user.id, period, utcOffset, types);
   res.json({ trends });
 });
 

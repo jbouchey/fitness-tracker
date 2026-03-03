@@ -26,10 +26,14 @@ const WORKOUT_SELECT = {
   createdAt: true,
 };
 
-async function getWorkouts(userId, { page = 1, limit = 20, type, search, startDate, endDate, sortBy = 'startTime', sortDir = 'desc' }) {
+async function getWorkouts(userId, { page = 1, limit = 20, type, types, search, startDate, endDate, sortBy = 'startTime', sortDir = 'desc' }) {
   const where = { userId };
 
-  if (type) where.workoutType = type;
+  if (types && types.length) {
+    where.workoutType = types.length === 1 ? types[0] : { in: types };
+  } else if (type) {
+    where.workoutType = type;
+  }
   if (search) where.title = { contains: search, mode: 'insensitive' };
   if (startDate || endDate) {
     where.startTime = {};
@@ -156,7 +160,7 @@ async function deleteWorkout(id, userId) {
 }
 
 async function getPersonalRecords(userId) {
-  const [fastestSplit, longestRun, mostElevation] = await Promise.all([
+  const [fastestSplit, longestRun, mostElevation, lifetimeAgg] = await Promise.all([
     prisma.split.findFirst({
       where: {
         workout: { userId },
@@ -178,15 +182,29 @@ async function getPersonalRecords(userId) {
       orderBy: { elevationGainFt: 'desc' },
       select: { id: true, title: true, startTime: true, elevationGainFt: true },
     }),
+    prisma.workout.aggregate({
+      where: { userId },
+      _sum: { distanceMiles: true, elevationGainFt: true },
+      _count: { id: true },
+    }),
   ]);
 
-  return { fastestSplit, longestRun, mostElevation };
+  const lifetimeTotals = {
+    totalWorkouts: lifetimeAgg._count.id,
+    totalMiles: lifetimeAgg._sum.distanceMiles ?? 0,
+    totalElevationGain: lifetimeAgg._sum.elevationGainFt ?? 0,
+  };
+
+  return { fastestSplit, longestRun, mostElevation, lifetimeTotals };
 }
 
-async function getActivityTrends(userId, period, utcOffset = 0) {
+async function getActivityTrends(userId, period, utcOffset = 0, types = null) {
   // Embed utcOffset as a raw literal to avoid PostgreSQL parameter type ambiguity
   // with interval arithmetic. Value is validated as int(-720..840) by the controller.
   const offsetLiteral = Prisma.raw(String(parseInt(utcOffset) || 0));
+  const typeFilter = types && types.length
+    ? Prisma.sql`AND "workoutType" IN (${Prisma.join(types)})`
+    : Prisma.sql``;
 
   if (period === 'week') {
     // Rolling last 7 days, grouped by local day
@@ -198,6 +216,7 @@ async function getActivityTrends(userId, period, utcOffset = 0) {
         COUNT(*)::INT AS runs
       FROM "workouts"
       WHERE "userId" = ${userId}
+        ${typeFilter}
         AND "startTime" >= NOW() - INTERVAL '6 days'
       GROUP BY 1
       ORDER BY 1
@@ -213,6 +232,7 @@ async function getActivityTrends(userId, period, utcOffset = 0) {
         COUNT(*)::INT AS runs
       FROM "workouts"
       WHERE "userId" = ${userId}
+        ${typeFilter}
         AND "startTime" - ${offsetLiteral} * INTERVAL '1 minute' >= DATE_TRUNC('month', NOW() - ${offsetLiteral} * INTERVAL '1 minute')
         AND "startTime" - ${offsetLiteral} * INTERVAL '1 minute' < DATE_TRUNC('month', NOW() - ${offsetLiteral} * INTERVAL '1 minute') + INTERVAL '1 month'
       GROUP BY 1

@@ -1,3 +1,10 @@
+export const SPORT_FILTER_OPTIONS = [
+  { value: 'all', label: 'All' },
+  { value: 'ALL_RUNS', label: 'All Runs', types: ['TRAIL_RUN', 'ROAD_RUN'] },
+  { value: 'CYCLING', label: 'Cycling', types: ['CYCLING'] },
+  { value: 'HIKE', label: 'Hike', types: ['HIKE'] },
+];
+
 export const WORKOUT_TYPES = [
   { value: 'TRAIL_RUN', label: 'Trail Run' },
   { value: 'ROAD_RUN', label: 'Road Run' },
