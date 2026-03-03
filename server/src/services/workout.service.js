@@ -202,8 +202,12 @@ async function getActivityTrends(userId, period, utcOffset = 0, types = null) {
   // Embed utcOffset as a raw literal to avoid PostgreSQL parameter type ambiguity
   // with interval arithmetic. Value is validated as int(-720..840) by the controller.
   const offsetLiteral = Prisma.raw(String(parseInt(utcOffset) || 0));
+  // Embed type values as raw literals for the same reason as offsetLiteral:
+  // PostgreSQL cannot infer WorkoutType enum from parameterized text values,
+  // so Prisma.join() produces a type mismatch. Values are pre-validated by
+  // the controller against VALID_TYPES so raw injection is safe here.
   const typeFilter = types && types.length
-    ? Prisma.sql`AND "workoutType" IN (${Prisma.join(types)})`
+    ? Prisma.sql`AND "workoutType"::text IN (${Prisma.raw(types.map((t) => `'${t}'`).join(', '))})`
     : Prisma.sql``;
 
   if (period === 'week') {
