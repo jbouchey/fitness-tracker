@@ -122,7 +122,7 @@ export default function AdventureSelectPage() {
             key={color}
             onClick={() => selectColor(color)}
             className={`
-              rounded-2xl bg-white border border-gray-100 overflow-hidden flex flex-col
+              h-44 rounded-2xl bg-white border border-gray-100 overflow-hidden flex flex-col
               transition-all duration-150
               ${isSelected(color) ? `ring-4 ${COLOR_RING[color]} ring-offset-2 scale-105` : 'hover:scale-105'}
             `}
@@ -130,7 +130,7 @@ export default function AdventureSelectPage() {
             <img
               src={`/characters/${activeArchetype}-${activeGender}-${color}.png`}
               alt={`${color} ${activeArchetype}`}
-              className="w-full object-contain"
+              className="flex-1 min-h-0 w-full object-contain object-bottom"
             />
             <p className="text-xs font-semibold text-gray-500 capitalize text-center py-1.5">{color}</p>
           </button>
