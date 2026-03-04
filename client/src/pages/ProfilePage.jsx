@@ -101,7 +101,13 @@ export default function ProfilePage() {
 
       {/* Strava */}
       <div className="bg-white rounded-xl border border-gray-100 p-6 mb-4">
-        <h2 className="text-base font-semibold text-gray-800 mb-1">Strava</h2>
+        <div className="flex items-center gap-2 mb-1">
+          {/* Strava logo mark */}
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="#FC5200" aria-hidden="true">
+            <path d="M15.387 17.944l-2.089-4.116h-3.065L15.387 24l5.15-10.172h-3.066m-7.008-5.599l2.836 5.598h4.172L10.463 0l-7 13.828h4.169" />
+          </svg>
+          <h2 className="text-base font-semibold text-gray-800">Strava</h2>
+        </div>
         <p className="text-sm text-gray-500 mb-4">
           Connect Strava to automatically sync new activities from COROS.
         </p>
@@ -113,20 +119,29 @@ export default function ProfilePage() {
         {stravaConnected === null ? (
           <p className="text-sm text-gray-400">Loading…</p>
         ) : stravaConnected ? (
-          <button
-            onClick={handleStravaDisconnect}
-            disabled={stravaStatus === 'disconnecting'}
-            className="btn-secondary text-sm"
-          >
-            {stravaStatus === 'disconnecting' ? 'Disconnecting…' : 'Disconnect Strava'}
-          </button>
+          <div className="flex items-center gap-3">
+            <span className="text-sm text-gray-600 font-medium">Compatible with Strava</span>
+            <button
+              onClick={handleStravaDisconnect}
+              disabled={stravaStatus === 'disconnecting'}
+              className="btn-secondary text-sm"
+            >
+              {stravaStatus === 'disconnecting' ? 'Disconnecting…' : 'Disconnect'}
+            </button>
+          </div>
         ) : (
           <button
             onClick={handleStravaConnect}
             disabled={stravaStatus === 'connecting'}
-            className="btn-primary text-sm"
+            className="disabled:opacity-50 disabled:cursor-not-allowed"
+            style={{ background: 'none', border: 'none', padding: 0 }}
           >
-            {stravaStatus === 'connecting' ? 'Connecting…' : 'Connect Strava'}
+            <img
+              src="https://developers.strava.com/images/btn_strava_connectwith_orange@2x.png"
+              alt="Connect with Strava"
+              height="48"
+              style={{ height: 48, display: 'block' }}
+            />
           </button>
         )}
       </div>
