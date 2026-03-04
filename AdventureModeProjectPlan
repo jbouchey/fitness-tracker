@@ -1,0 +1,99 @@
+Adventure Mode — Phased Project Plan
+Design Decisions & Constraints
+DecisionDetailEntry Point"Enter Adventure Mode" button on main Dashboard (replaces Upload Workout)DiscoveryPassive / easter egg — not proactively surfacedExitUsers can exit and return to Default Mode anytimeCharacter SwappingFree — does NOT reset progressionProgression ResetProfile > Settings only, with explicit warning modalCharacter Assets24 illustrations via Canva AILeveling SystemDeferred to Phase 3
+
+Character System — 24 Illustrations
+3 archetypes × 2 genders × 4 colors = 24 unique illustrations
+ArchetypeGendersColorsWizardMale, FemaleBlue, Green, Red, YellowArcherMale, FemaleBlue, Green, Red, YellowWarriorMale, FemaleBlue, Green, Red, Yellow
+
+Phase 1 — Character System & Mode Entry (Launch)
+Dashboard Entry Point
+
+Replace Upload Workout button with Enter Adventure Mode
+Move Upload Workout to Profile menu or secondary action
+
+First-Time Onboarding
+
+Tapping "Enter Adventure Mode" triggers character selection
+No proactive prompt — discoverable, easter egg feel
+Clear exit path back to Default Mode at any time
+
+Character Selection Screen
+
+Browsable grid or carousel of all 24 characters
+Selection: Archetype → Gender → Color
+Brief intro narrative line on confirm
+Character stored in user profile (persists across sessions)
+
+Character Editing
+
+Accessible from Adventure Mode settings or Profile
+Swap freely — never resets long-term progression
+Progression reset is a separate protected flow
+
+Adventure Mode Shell
+
+Adventure-themed UI applied when mode is active
+Strava sync continues as normal underneath
+
+Phase 1 Deliverables
+
+ 24 character illustrations (Canva AI)
+ Dashboard CTA button swap
+ Character selection screen
+ Character persistence (profile data model update)
+ Adventure Mode themed shell/layout
+ Mode toggle (enter/exit) with state management
+ Character swap settings flow
+
+
+Phase 2 — Weekly Quests & Narrative Layer
+Difficulty Settings
+ModeWeekly TargetEasy1 hourMedium5 hoursHard10 hoursEpic20 hours
+Weekly Quest Structure
+
+Each week = one quest
+Divided into waypoints at 25%, 50%, 75%, 100% of weekly target
+Each waypoint triggers a narrative story beat
+Quest completion = reward unlocked
+
+Metadata-Driven Narrative Engine
+SignalThemeHot weatherDesert, scorched plainsCold weatherIce, frozen tundraRainStorm, flooded pathsHigh elevationMountains, summit pushFlat terrainValleys, open roadsEarly morningSunrise, misty dawnLate nightMoonlit paths
+Weather strategy: check Strava API first; if unavailable, query historical weather via timestamp + GPS coords (OpenWeatherMap / Visual Crossing / WeatherAPI.com).
+Phase 2 Deliverables
+
+ Difficulty selection screen
+ Weekly quest data model
+ Waypoint progression logic
+ Weather API integration
+ Narrative content system (metadata → story text mapping)
+ Post-workout narrative recap screen
+ Quest completion screen + reward trigger
+
+
+Phase 3 — Items & Long-Term Progression (1–99)
+Item Rewards
+
+Collectible item unlocked on weekly quest completion
+Viewable in inventory/trophy screen
+
+Leveling System
+
+XP earned per workout; level persists regardless of character swaps
+Reset: Profile > Settings > Adventure Progression, two-step confirmation with hard warning
+
+Phase 3 Deliverables
+
+ XP model and leveling curve
+ Level display on profile
+ Item data model + reward logic
+ Inventory screen
+ Progression reset flow with warning modal
+
+
+Open Questions
+
+Where does Upload Workout live after Dashboard displacement?
+Can difficulty mode change mid-week or is it locked per quest?
+What is the item taxonomy? (Character skins, emblems, titles?)
+Which weather API fits your existing stack and budget?
