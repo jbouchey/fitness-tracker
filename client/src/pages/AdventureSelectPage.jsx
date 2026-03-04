@@ -6,6 +6,12 @@ import { adventureApi } from '../api/adventure';
 const ARCHETYPES = ['wizard', 'archer', 'warrior'];
 const GENDERS = ['male', 'female'];
 const COLORS = ['blue', 'green', 'red', 'yellow'];
+const DIFFICULTIES = [
+  { key: 'easy',   label: 'Easy',   sub: '1 hour / week' },
+  { key: 'medium', label: 'Medium', sub: '5 hours / week' },
+  { key: 'hard',   label: 'Hard',   sub: '10 hours / week' },
+  { key: 'epic',   label: 'Epic',   sub: '20 hours / week' },
+];
 
 const COLOR_BG = {
   blue:   'bg-blue-400',
@@ -21,7 +27,6 @@ const COLOR_RING = {
   yellow: 'ring-yellow-500',
 };
 
-// Simple inline SVG icons for each archetype
 function ArchetypeIcon({ archetype }) {
   if (archetype === 'wizard') {
     return (
@@ -57,6 +62,8 @@ export default function AdventureSelectPage() {
   const [selected, setSelected] = useState({ archetype: null, gender: null, color: null });
   const [activeArchetype, setActiveArchetype] = useState('wizard');
   const [activeGender, setActiveGender] = useState('male');
+  const [activeDifficulty, setActiveDifficulty] = useState('medium');
+  const [showConfirm, setShowConfirm] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
 
@@ -72,24 +79,33 @@ export default function AdventureSelectPage() {
     );
   }
 
-  async function handleBeginAdventure() {
+  function handleBeginClick() {
     if (!selected.archetype) {
       setError('Please select a character first.');
       return;
     }
+    setError(null);
+    setShowConfirm(true);
+  }
+
+  async function handleConfirm() {
     setSaving(true);
     setError(null);
     try {
-      let user = await adventureApi.updateCharacter(selected);
-      user = await adventureApi.toggleMode(true);
+      await adventureApi.updateCharacter(selected);
+      await adventureApi.setDifficulty(activeDifficulty);
+      const user = await adventureApi.toggleMode(true);
       updateUser(user);
       navigate('/adventure');
     } catch (err) {
       const msg = err.response?.data?.error || err.message || 'Something went wrong.';
       setError(msg);
+      setShowConfirm(false);
       setSaving(false);
     }
   }
+
+  const selectedDiff = DIFFICULTIES.find((d) => d.key === activeDifficulty);
 
   return (
     <div className="max-w-2xl mx-auto">
@@ -153,6 +169,27 @@ export default function AdventureSelectPage() {
         ))}
       </div>
 
+      {/* Difficulty picker */}
+      <div className="bg-white rounded-xl border border-gray-100 p-5 mb-6">
+        <p className="text-sm font-semibold text-gray-700 mb-3">Quest Difficulty</p>
+        <div className="grid grid-cols-2 gap-2">
+          {DIFFICULTIES.map(({ key, label, sub }) => (
+            <button
+              key={key}
+              onClick={() => setActiveDifficulty(key)}
+              className={`py-2.5 px-3 rounded-lg text-left transition-colors ${
+                activeDifficulty === key
+                  ? 'bg-indigo-600 text-white'
+                  : 'bg-gray-50 border border-gray-200 text-gray-600 hover:bg-gray-100'
+              }`}
+            >
+              <p className="text-xs font-semibold">{label}</p>
+              <p className={`text-xs mt-0.5 ${activeDifficulty === key ? 'text-indigo-200' : 'text-gray-400'}`}>{sub}</p>
+            </button>
+          ))}
+        </div>
+      </div>
+
       {/* Selected summary */}
       {selected.archetype && (
         <p className="text-sm text-gray-500 mb-4 text-center">
@@ -166,12 +203,58 @@ export default function AdventureSelectPage() {
       {error && <p className="text-sm text-red-600 mb-4 text-center">{error}</p>}
 
       <button
-        onClick={handleBeginAdventure}
-        disabled={!selected.archetype || saving}
+        onClick={handleBeginClick}
+        disabled={!selected.archetype}
         className="btn-primary w-full disabled:opacity-50 disabled:cursor-not-allowed"
       >
-        {saving ? 'Starting Adventure…' : '⚔ Begin Adventure'}
+        ⚔ Begin Adventure
       </button>
+
+      {/* Confirmation modal */}
+      {showConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40">
+          <div className="bg-white rounded-2xl shadow-xl max-w-sm w-full p-6">
+            <h2 className="text-lg font-bold text-gray-900 mb-1">Begin Your Quest?</h2>
+            <p className="text-sm text-gray-500 mb-4 capitalize">
+              {selected.color} {selected.archetype} · {selectedDiff?.label} ({selectedDiff?.sub})
+            </p>
+
+            <ul className="space-y-2 mb-6">
+              <li className="flex gap-2 text-sm text-gray-600">
+                <span className="text-amber-500 flex-shrink-0">⚠</span>
+                Your quest is locked to this week (Mon–Sun). Difficulty cannot be changed once you log your first workout.
+              </li>
+              <li className="flex gap-2 text-sm text-gray-600">
+                <span className="text-indigo-500 flex-shrink-0">✦</span>
+                Workouts you've already logged this week will be counted immediately when the quest loads.
+              </li>
+              <li className="flex gap-2 text-sm text-gray-600">
+                <span className="text-indigo-500 flex-shrink-0">✦</span>
+                Future progress updates automatically via Strava sync or file upload.
+              </li>
+            </ul>
+
+            {error && <p className="text-sm text-red-600 mb-4">{error}</p>}
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowConfirm(false)}
+                disabled={saving}
+                className="flex-1 py-2 rounded-lg border border-gray-200 text-sm font-medium text-gray-600 hover:bg-gray-50 disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleConfirm}
+                disabled={saving}
+                className="flex-1 py-2 rounded-lg bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-700 disabled:opacity-50"
+              >
+                {saving ? 'Starting…' : 'Start Quest'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
