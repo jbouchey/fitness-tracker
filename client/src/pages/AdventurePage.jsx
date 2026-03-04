@@ -53,6 +53,7 @@ export default function AdventurePage() {
   const [exiting, setExiting] = useState(false);
   const [difficultyChanging, setDifficultyChanging] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [resetting, setResetting] = useState(false);
 
   // No character yet — send to selection
   if (!user?.adventureCharacterArchetype) {
@@ -83,6 +84,19 @@ export default function AdventurePage() {
       navigate('/');
     } catch {
       setExiting(false);
+    }
+  }
+
+  async function handleResetQuest() {
+    if (!window.confirm('Reset this week\'s quest? All progress and narrative beats will be deleted.')) return;
+    setResetting(true);
+    try {
+      await adventureApi.resetQuest();
+      await fetchQuest();
+    } catch {
+      // silently ignore
+    } finally {
+      setResetting(false);
     }
   }
 
@@ -260,6 +274,15 @@ export default function AdventurePage() {
         className="btn-secondary w-full disabled:opacity-50 disabled:cursor-not-allowed"
       >
         {exiting ? 'Exiting…' : 'Exit Adventure Mode'}
+      </button>
+
+      {/* Testing utility */}
+      <button
+        onClick={handleResetQuest}
+        disabled={resetting}
+        className="mt-3 w-full text-xs text-red-400 hover:text-red-600 disabled:opacity-50"
+      >
+        {resetting ? 'Resetting…' : 'Reset Quest (testing)'}
       </button>
     </div>
   );

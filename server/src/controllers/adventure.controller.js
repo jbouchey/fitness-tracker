@@ -1,6 +1,6 @@
 const { catchAsync } = require('../middleware/errorHandler');
 const prisma = require('../config/database');
-const { getOrCreateCurrentQuest, recalculateQuestProgress, DIFFICULTY_SECONDS } = require('../services/quest.service');
+const { getOrCreateCurrentQuest, recalculateQuestProgress, DIFFICULTY_SECONDS, getCurrentMondayUTC } = require('../services/quest.service');
 
 const VALID_ARCHETYPES = ['wizard', 'archer', 'warrior'];
 const VALID_GENDERS = ['male', 'female'];
@@ -106,4 +106,11 @@ const setDifficulty = catchAsync(async (req, res) => {
   res.json({ user, quest: updatedQuest });
 });
 
-module.exports = { updateCharacter, toggleMode, getQuest, setDifficulty };
+/** DELETE /api/adventure/quest — deletes current week's quest for testing */
+const resetQuest = catchAsync(async (req, res) => {
+  const weekStart = getCurrentMondayUTC();
+  await prisma.quest.deleteMany({ where: { userId: req.user.id, weekStart } });
+  res.json({ ok: true });
+});
+
+module.exports = { updateCharacter, toggleMode, getQuest, setDifficulty, resetQuest };
