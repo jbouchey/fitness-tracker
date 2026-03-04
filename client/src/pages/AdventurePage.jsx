@@ -116,25 +116,33 @@ export default function AdventurePage() {
       </div>
 
       {/* Character card */}
-      <div className="bg-white rounded-xl border border-gray-100 p-4 mb-4 flex items-end gap-4">
-        <div className="flex-shrink-0 w-32 rounded-xl overflow-hidden">
-          <img
-            src={`/characters/${archetype}-${gender}-${color}.png`}
-            alt={`${color} ${archetype}`}
-            className="w-full object-contain"
-          />
+      <div className="relative rounded-xl overflow-hidden mb-4">
+        <img
+          src={`/homelands/${color}.png`}
+          alt={`${color} homeland`}
+          className="absolute inset-0 w-full h-full object-cover"
+        />
+        <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-black/30 to-transparent" />
+        <div className="relative flex items-end gap-4 p-4">
+          <div className="flex-shrink-0 w-32 rounded-xl overflow-hidden">
+            <img
+              src={`/characters/${archetype}-${gender}-${color}.png`}
+              alt={`${color} ${archetype}`}
+              className="w-full object-contain"
+            />
+          </div>
+          <div>
+            <p className="text-xs text-white/60 uppercase tracking-wide mb-0.5">Your Character</p>
+            <h2 className="text-lg font-bold text-white capitalize">{color} {archetype}</h2>
+            <p className="text-sm text-white/70 capitalize">{gender}</p>
+          </div>
+          <button
+            onClick={() => navigate('/adventure/select')}
+            className="ml-auto text-sm text-white/80 hover:text-white font-medium"
+          >
+            Change
+          </button>
         </div>
-        <div>
-          <p className="text-xs text-gray-400 uppercase tracking-wide mb-0.5">Your Character</p>
-          <h2 className="text-lg font-bold text-gray-900 capitalize">{color} {archetype}</h2>
-          <p className="text-sm text-gray-500 capitalize">{gender}</p>
-        </div>
-        <button
-          onClick={() => navigate('/adventure/select')}
-          className="ml-auto text-sm text-indigo-600 hover:text-indigo-800 font-medium"
-        >
-          Change
-        </button>
       </div>
 
       {/* Quest card */}
