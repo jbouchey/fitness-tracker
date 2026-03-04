@@ -116,12 +116,12 @@ export default function AdventurePage() {
       </div>
 
       {/* Character card */}
-      <div className="bg-white rounded-xl border border-gray-100 p-6 mb-4 flex items-center gap-5">
-        <div className="w-20 h-20 rounded-2xl bg-white border border-gray-100 flex-shrink-0 overflow-hidden">
+      <div className="bg-white rounded-xl border border-gray-100 p-4 mb-4 flex items-end gap-4">
+        <div className="flex-shrink-0 w-20 rounded-xl overflow-hidden">
           <img
             src={`/characters/${archetype}-${gender}-${color}.png`}
             alt={`${color} ${archetype}`}
-            className="w-full h-full object-contain p-1"
+            className="w-full object-contain"
           />
         </div>
         <div>

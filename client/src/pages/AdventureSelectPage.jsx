@@ -116,13 +116,13 @@ export default function AdventureSelectPage() {
       </div>
 
       {/* Color tiles */}
-      <div className="grid grid-cols-4 gap-4 mb-8">
+      <div className="grid grid-cols-4 gap-3 mb-8">
         {COLORS.map((color) => (
           <button
             key={color}
             onClick={() => selectColor(color)}
             className={`
-              aspect-square rounded-2xl bg-white border border-gray-100 flex flex-col items-center justify-center gap-1 overflow-hidden
+              rounded-2xl bg-white border border-gray-100 overflow-hidden flex flex-col
               transition-all duration-150
               ${isSelected(color) ? `ring-4 ${COLOR_RING[color]} ring-offset-2 scale-105` : 'hover:scale-105'}
             `}
@@ -130,8 +130,9 @@ export default function AdventureSelectPage() {
             <img
               src={`/characters/${activeArchetype}-${activeGender}-${color}.png`}
               alt={`${color} ${activeArchetype}`}
-              className="w-full h-full object-contain p-1"
+              className="w-full object-contain"
             />
+            <p className="text-xs font-semibold text-gray-500 capitalize text-center py-1.5">{color}</p>
           </button>
         ))}
       </div>
