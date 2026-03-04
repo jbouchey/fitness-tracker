@@ -47,8 +47,10 @@ model User {
   adventureCharacterArchetype String? // "wizard" | "archer" | "warrior"
   adventureCharacterGender    String? // "male" | "female"
   adventureCharacterColor     String? // "blue" | "green" | "red" | "yellow"
+  adventureDifficulty         String  @default("medium") // "easy" | "medium" | "hard" | "epic"
 
   workouts Workout[]
+  quests   Quest[]
 
   @@map("users")
 }
@@ -134,4 +136,30 @@ model TrackPoint {
 
   @@index([workoutId, sequence])
   @@map("track_points")
+}
+
+model Quest {
+  id            String   @id @default(cuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  weekStart     DateTime // Monday 00:00:00 UTC
+  difficulty    String   // "easy" | "medium" | "hard" | "epic"
+  targetSeconds Int      // 3600 | 18000 | 36000 | 72000
+  earnedSeconds Int      @default(0)
+
+  status         String  @default("active") // "active" | "completed" | "failed"
+  waypoint1Hit   Boolean @default(false)
+  waypoint2Hit   Boolean @default(false)
+  waypoint3Hit   Boolean @default(false)
+  questCompleted Boolean @default(false)
+
+  narrativeBeats Json    @default("[]") // [{waypointNum, text, triggeredAt}]
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@unique([userId, weekStart])
+  @@index([userId, weekStart(sort: Desc)])
+  @@map("quests")
 }

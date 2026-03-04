@@ -39,6 +39,7 @@ const me = catchAsync(async (req, res) => {
       adventureCharacterArchetype: true,
       adventureCharacterGender: true,
       adventureCharacterColor: true,
+      adventureDifficulty: true,
     },
   });
   if (!user) return res.status(404).json({ error: 'User not found.' });

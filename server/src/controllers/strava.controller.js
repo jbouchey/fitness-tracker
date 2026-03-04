@@ -6,6 +6,7 @@ const {
   exchangeCode,
   importStravaActivity,
 } = require('../services/strava.service');
+const { updateQuestProgress } = require('../services/quest.service');
 
 /** GET /api/strava/connect — return Strava OAuth URL (requires auth) */
 const connect = catchAsync(async (req, res) => {
@@ -73,7 +74,8 @@ const webhookEvent = (req, res) => {
       });
       if (!user) return;
 
-      await importStravaActivity(user.id, object_id);
+      const workout = await importStravaActivity(user.id, object_id);
+      if (workout) await updateQuestProgress(user.id, workout);
     } catch (err) {
       console.error('[Strava webhook] Failed to import activity:', err);
     }

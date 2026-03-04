@@ -221,12 +221,12 @@ function convertActivity(stravaData, streams) {
 async function importStravaActivity(userId, stravaActivityId) {
   const activityIdStr = String(stravaActivityId);
 
-  // Dedup check
+  // Dedup check — return null so callers know it was already imported
   const existing = await prisma.workout.findUnique({
     where: { stravaActivityId: activityIdStr },
     select: { id: true },
   });
-  if (existing) return existing;
+  if (existing) return null;
 
   const accessToken = await getValidToken(userId);
   const [stravaData, streams] = await Promise.all([

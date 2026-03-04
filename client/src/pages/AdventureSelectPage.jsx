@@ -84,8 +84,9 @@ export default function AdventureSelectPage() {
       user = await adventureApi.toggleMode(true);
       updateUser(user);
       navigate('/adventure');
-    } catch {
-      setError('Something went wrong. Please try again.');
+    } catch (err) {
+      const msg = err.response?.data?.error || err.message || 'Something went wrong.';
+      setError(msg);
       setSaving(false);
     }
   }

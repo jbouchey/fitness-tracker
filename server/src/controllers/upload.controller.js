@@ -2,6 +2,7 @@ const { z } = require('zod');
 const prisma = require('../config/database');
 const { parseFile } = require('../services/fileParser.service');
 const { catchAsync } = require('../middleware/errorHandler');
+const { updateQuestProgress } = require('../services/quest.service');
 
 const uploadSchema = z.object({
   title: z.string().min(1).max(200).optional(),
@@ -95,6 +96,12 @@ const uploadWorkout = catchAsync(async (req, res) => {
   });
 
   res.status(201).json({ workout: fullWorkout, message: 'Workout uploaded successfully.' });
+
+  // Fire-and-forget: update quest progress without blocking the response
+  setImmediate(async () => {
+    try { await updateQuestProgress(req.user.id, workout); }
+    catch (err) { console.error('[Quest] upload progress failed:', err); }
+  });
 });
 
 function formatWorkoutType(type) {

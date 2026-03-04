@@ -1,9 +1,11 @@
 const { catchAsync } = require('../middleware/errorHandler');
 const prisma = require('../config/database');
+const { getOrCreateCurrentQuest, DIFFICULTY_SECONDS } = require('../services/quest.service');
 
 const VALID_ARCHETYPES = ['wizard', 'archer', 'warrior'];
 const VALID_GENDERS = ['male', 'female'];
 const VALID_COLORS = ['blue', 'green', 'red', 'yellow'];
+const VALID_DIFFICULTIES = ['easy', 'medium', 'hard', 'epic'];
 
 const ADVENTURE_SELECT = {
   id: true,
@@ -15,6 +17,7 @@ const ADVENTURE_SELECT = {
   adventureCharacterArchetype: true,
   adventureCharacterGender: true,
   adventureCharacterColor: true,
+  adventureDifficulty: true,
 };
 
 const updateCharacter = catchAsync(async (req, res) => {
@@ -59,4 +62,47 @@ const toggleMode = catchAsync(async (req, res) => {
   res.json({ user });
 });
 
-module.exports = { updateCharacter, toggleMode };
+/** GET /api/adventure/quest — returns current week's quest (creates if needed) */
+const getQuest = catchAsync(async (req, res) => {
+  const user = await prisma.user.findUnique({
+    where: { id: req.user.id },
+    select: { adventureModeEnabled: true },
+  });
+
+  if (!user?.adventureModeEnabled) {
+    return res.json({ quest: null });
+  }
+
+  const quest = await getOrCreateCurrentQuest(req.user.id);
+  res.json({ quest });
+});
+
+/** PATCH /api/adventure/difficulty — update difficulty preference + current quest if unlocked */
+const setDifficulty = catchAsync(async (req, res) => {
+  const { difficulty } = req.body;
+
+  if (!VALID_DIFFICULTIES.includes(difficulty)) {
+    return res.status(400).json({ error: 'Invalid difficulty.' });
+  }
+
+  // Update user preference
+  const user = await prisma.user.update({
+    where: { id: req.user.id },
+    data: { adventureDifficulty: difficulty },
+    select: ADVENTURE_SELECT,
+  });
+
+  // If current quest has no progress yet, update its difficulty too
+  const quest = await getOrCreateCurrentQuest(req.user.id);
+  let updatedQuest = quest;
+  if (quest.earnedSeconds === 0) {
+    updatedQuest = await prisma.quest.update({
+      where: { id: quest.id },
+      data: { difficulty, targetSeconds: DIFFICULTY_SECONDS[difficulty] },
+    });
+  }
+
+  res.json({ user, quest: updatedQuest });
+});
+
+module.exports = { updateCharacter, toggleMode, getQuest, setDifficulty };

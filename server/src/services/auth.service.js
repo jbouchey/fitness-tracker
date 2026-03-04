@@ -15,6 +15,7 @@ const USER_SELECT = {
   adventureCharacterArchetype: true,
   adventureCharacterGender: true,
   adventureCharacterColor: true,
+  adventureDifficulty: true,
 };
 
 function generateToken() {
