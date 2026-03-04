@@ -116,7 +116,7 @@ export default function AdventureSelectPage() {
       </div>
 
       {/* Color tiles */}
-      <div className="grid grid-cols-2 gap-3 mb-8">
+      <div className="grid grid-cols-4 gap-3 mb-8">
         {COLORS.map((color) => (
           <button
             key={color}
