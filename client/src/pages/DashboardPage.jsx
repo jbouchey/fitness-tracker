@@ -70,8 +70,8 @@ export default function DashboardPage() {
     <div>
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold text-gray-900">My Workouts</h1>
-        <Link to="/upload" className="btn-primary">
-          Upload Workout
+        <Link to="/adventure" className="btn-primary">
+          ⚔ Adventure Mode
         </Link>
       </div>
 

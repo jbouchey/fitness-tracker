@@ -5,7 +5,17 @@ const { signToken } = require('../utils/jwtUtils');
 const { sendEmail } = require('../utils/emailUtils');
 const { APP_URL } = require('../config/env');
 
-const USER_SELECT = { id: true, email: true, displayName: true, emailVerified: true, createdAt: true };
+const USER_SELECT = {
+  id: true,
+  email: true,
+  displayName: true,
+  emailVerified: true,
+  createdAt: true,
+  adventureModeEnabled: true,
+  adventureCharacterArchetype: true,
+  adventureCharacterGender: true,
+  adventureCharacterColor: true,
+};
 
 function generateToken() {
   return crypto.randomBytes(32).toString('hex');

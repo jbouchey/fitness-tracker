@@ -43,6 +43,11 @@ model User {
   stravaRefreshToken String?
   stravaTokenExpiry  DateTime?
 
+  adventureModeEnabled        Boolean @default(false)
+  adventureCharacterArchetype String? // "wizard" | "archer" | "warrior"
+  adventureCharacterGender    String? // "male" | "female"
+  adventureCharacterColor     String? // "blue" | "green" | "red" | "yellow"
+
   workouts Workout[]
 
   @@map("users")

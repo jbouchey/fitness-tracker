@@ -12,6 +12,8 @@ import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import ResetPasswordPage from './pages/ResetPasswordPage';
 import VerifyEmailPage from './pages/VerifyEmailPage';
 import NotFoundPage from './pages/NotFoundPage';
+import AdventurePage from './pages/AdventurePage';
+import AdventureSelectPage from './pages/AdventureSelectPage';
 
 export default function App() {
   return (
@@ -30,6 +32,8 @@ export default function App() {
             <Route path="/workouts/:id" element={<WorkoutDetailPage />} />
             <Route path="/profile" element={<ProfilePage />} />
             <Route path="/records" element={<RecordsPage />} />
+            <Route path="/adventure" element={<AdventurePage />} />
+            <Route path="/adventure/select" element={<AdventureSelectPage />} />
           </Route>
         </Route>
 

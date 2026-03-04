@@ -29,7 +29,17 @@ const login = catchAsync(async (req, res) => {
 const me = catchAsync(async (req, res) => {
   const user = await prisma.user.findUnique({
     where: { id: req.user.id },
-    select: { id: true, email: true, displayName: true, emailVerified: true, createdAt: true },
+    select: {
+      id: true,
+      email: true,
+      displayName: true,
+      emailVerified: true,
+      createdAt: true,
+      adventureModeEnabled: true,
+      adventureCharacterArchetype: true,
+      adventureCharacterGender: true,
+      adventureCharacterColor: true,
+    },
   });
   if (!user) return res.status(404).json({ error: 'User not found.' });
   res.json({ user });
