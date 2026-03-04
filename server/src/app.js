@@ -9,6 +9,7 @@ const { errorHandler } = require('./middleware/errorHandler');
 const authRoutes = require('./routes/auth.routes');
 const workoutRoutes = require('./routes/workout.routes');
 const uploadRoutes = require('./routes/upload.routes');
+const stravaRoutes = require('./routes/strava.routes');
 
 const app = express();
 app.set('trust proxy', 1); // Railway runs behind a reverse proxy
@@ -50,6 +51,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use('/api/auth', authRoutes);
 app.use('/api/workouts', workoutRoutes);
 app.use('/api/upload', uploadRoutes);
+app.use('/api/strava', stravaRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => res.json({ status: 'ok' }));

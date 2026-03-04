@@ -16,4 +16,7 @@ module.exports = {
   RESEND_API_KEY: process.env.RESEND_API_KEY || null,
   APP_URL:    process.env.APP_URL    || 'http://localhost:5173',
   REQUIRE_EMAIL_VERIFICATION: process.env.REQUIRE_EMAIL_VERIFICATION === 'true',
+  STRAVA_CLIENT_ID:            process.env.STRAVA_CLIENT_ID            || null,
+  STRAVA_CLIENT_SECRET:        process.env.STRAVA_CLIENT_SECRET        || null,
+  STRAVA_WEBHOOK_VERIFY_TOKEN: process.env.STRAVA_WEBHOOK_VERIFY_TOKEN || null,
 };

@@ -70,4 +70,4 @@ async function parseFile(buffer, originalName) {
   };
 }
 
-module.exports = { parseFile };
+module.exports = { parseFile, downsamplePoints };

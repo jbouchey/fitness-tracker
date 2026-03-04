@@ -20,6 +20,7 @@ enum FileFormat {
   FIT
   GPX
   TCX
+  STRAVA
 }
 
 model User {
@@ -36,6 +37,11 @@ model User {
   passwordResetToken       String?   @unique
   passwordResetExpiry      DateTime?
   tokenVersion             Int       @default(0)
+
+  stravaAthleteId    String?   @unique
+  stravaAccessToken  String?
+  stravaRefreshToken String?
+  stravaTokenExpiry  DateTime?
 
   workouts Workout[]
 
@@ -73,6 +79,8 @@ model Workout {
 
   calories Int?
   notes    String?
+
+  stravaActivityId String? @unique
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

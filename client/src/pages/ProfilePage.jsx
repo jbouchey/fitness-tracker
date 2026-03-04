@@ -1,9 +1,12 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 import { authApi } from '../api/auth';
+import { stravaApi } from '../api/strava';
 
 export default function ProfilePage() {
   const { user, updateUser } = useAuthStore();
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const [displayName, setDisplayName] = useState(user?.displayName ?? '');
   const [nameStatus, setNameStatus] = useState(null); // 'saving' | 'saved' | 'error'
@@ -12,6 +15,52 @@ export default function ProfilePage() {
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [pwStatus, setPwStatus] = useState(null); // 'saving' | 'saved' | { error }
+
+  const [stravaConnected, setStravaConnected] = useState(null); // null = loading
+  const [stravaStatus, setStravaStatus] = useState(null); // 'connecting' | 'disconnecting' | null
+  const [stravaMessage, setStravaMessage] = useState(null); // success/error message
+
+  // Check Strava connection status on mount
+  useEffect(() => {
+    stravaApi.getStatus().then(({ connected }) => setStravaConnected(connected)).catch(() => setStravaConnected(false));
+  }, []);
+
+  // Handle return from Strava OAuth
+  useEffect(() => {
+    const result = searchParams.get('strava');
+    if (result === 'connected') {
+      setStravaConnected(true);
+      setStravaMessage({ type: 'success', text: 'Strava connected successfully!' });
+      setSearchParams({}, { replace: true });
+    } else if (result === 'denied') {
+      setStravaMessage({ type: 'error', text: 'Strava authorization was denied.' });
+      setSearchParams({}, { replace: true });
+    }
+  }, []);
+
+  async function handleStravaConnect() {
+    setStravaStatus('connecting');
+    try {
+      const url = await stravaApi.getConnectUrl();
+      window.location.href = url;
+    } catch {
+      setStravaStatus(null);
+      setStravaMessage({ type: 'error', text: 'Failed to start Strava connection.' });
+    }
+  }
+
+  async function handleStravaDisconnect() {
+    setStravaStatus('disconnecting');
+    try {
+      await stravaApi.disconnect();
+      setStravaConnected(false);
+      setStravaMessage({ type: 'success', text: 'Strava disconnected.' });
+    } catch {
+      setStravaMessage({ type: 'error', text: 'Failed to disconnect Strava.' });
+    } finally {
+      setStravaStatus(null);
+    }
+  }
 
   async function handleNameSave(e) {
     e.preventDefault();
@@ -49,6 +98,38 @@ export default function ProfilePage() {
   return (
     <div className="max-w-lg">
       <h1 className="text-2xl font-bold text-gray-900 mb-6">Profile</h1>
+
+      {/* Strava */}
+      <div className="bg-white rounded-xl border border-gray-100 p-6 mb-4">
+        <h2 className="text-base font-semibold text-gray-800 mb-1">Strava</h2>
+        <p className="text-sm text-gray-500 mb-4">
+          Connect Strava to automatically sync new activities from COROS.
+        </p>
+        {stravaMessage && (
+          <p className={`text-sm mb-3 ${stravaMessage.type === 'success' ? 'text-green-600' : 'text-red-600'}`}>
+            {stravaMessage.text}
+          </p>
+        )}
+        {stravaConnected === null ? (
+          <p className="text-sm text-gray-400">Loading…</p>
+        ) : stravaConnected ? (
+          <button
+            onClick={handleStravaDisconnect}
+            disabled={stravaStatus === 'disconnecting'}
+            className="btn-secondary text-sm"
+          >
+            {stravaStatus === 'disconnecting' ? 'Disconnecting…' : 'Disconnect Strava'}
+          </button>
+        ) : (
+          <button
+            onClick={handleStravaConnect}
+            disabled={stravaStatus === 'connecting'}
+            className="btn-primary text-sm"
+          >
+            {stravaStatus === 'connecting' ? 'Connecting…' : 'Connect Strava'}
+          </button>
+        )}
+      </div>
 
       {/* Display name */}
       <div className="bg-white rounded-xl border border-gray-100 p-6 mb-4">
