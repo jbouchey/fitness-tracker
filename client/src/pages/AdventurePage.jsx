@@ -52,6 +52,7 @@ export default function AdventurePage() {
   const [questLoading, setQuestLoading] = useState(true);
   const [exiting, setExiting] = useState(false);
   const [difficultyChanging, setDifficultyChanging] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
   // No character yet — send to selection
   if (!user?.adventureCharacterArchetype) {
@@ -61,12 +62,18 @@ export default function AdventurePage() {
   const { adventureCharacterArchetype: archetype, adventureCharacterGender: gender, adventureCharacterColor: color } = user;
   const bgClass = COLOR_BG[color] ?? 'bg-gray-400';
 
-  useEffect(() => {
+  function fetchQuest(showSpinner = false) {
+    if (showSpinner) setRefreshing(true);
     adventureApi.getQuest()
       .then(({ quest: q }) => setQuest(q))
       .catch(() => {})
-      .finally(() => setQuestLoading(false));
-  }, []);
+      .finally(() => {
+        setQuestLoading(false);
+        setRefreshing(false);
+      });
+  }
+
+  useEffect(() => { fetchQuest(); }, []);
 
   async function handleExit() {
     setExiting(true);
@@ -147,17 +154,26 @@ export default function AdventurePage() {
       <div className="bg-white rounded-xl border border-gray-100 p-6 mb-6">
         <div className="flex items-center justify-between mb-1">
           <h2 className="text-base font-semibold text-gray-800">Weekly Quest</h2>
-          {quest && (
-            <span className={`text-xs font-semibold px-2 py-0.5 rounded-full capitalize ${
-              quest.status === 'completed'
-                ? 'bg-green-100 text-green-700'
-                : quest.status === 'failed'
-                ? 'bg-gray-100 text-gray-500'
-                : 'bg-indigo-50 text-indigo-600'
-            }`}>
-              {quest.status === 'completed' ? 'Complete' : quest.difficulty}
-            </span>
-          )}
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => fetchQuest(true)}
+              disabled={refreshing}
+              className="text-xs text-indigo-600 hover:text-indigo-800 disabled:opacity-50"
+            >
+              {refreshing ? 'Refreshing…' : '↻ Refresh'}
+            </button>
+            {quest && (
+              <span className={`text-xs font-semibold px-2 py-0.5 rounded-full capitalize ${
+                quest.status === 'completed'
+                  ? 'bg-green-100 text-green-700'
+                  : quest.status === 'failed'
+                  ? 'bg-gray-100 text-gray-500'
+                  : 'bg-indigo-50 text-indigo-600'
+              }`}>
+                {quest.status === 'completed' ? 'Complete' : quest.difficulty}
+              </span>
+            )}
+          </div>
         </div>
 
         {questLoading ? (

@@ -41,27 +41,30 @@ async function getOrCreateCurrentQuest(userId) {
 }
 
 /**
- * Updates quest progress after a workout is recorded.
- * Called fire-and-forget after upload or Strava sync.
+ * Recalculates quest progress from scratch by summing all workouts in the current week.
+ * Called on GET /quest so progress is always accurate — handles workouts uploaded before
+ * adventure mode was active, deleted workouts, and missed webhook events.
+ * Only generates narrative beats for waypoints that haven't been hit yet.
  */
-async function updateQuestProgress(userId, workout) {
+async function recalculateQuestProgress(userId) {
   const user = await prisma.user.findUnique({
     where: { id: userId },
     select: { adventureModeEnabled: true, adventureCharacterArchetype: true },
   });
-
-  if (!user?.adventureModeEnabled || !user.adventureCharacterArchetype) return;
-
-  // Only count workouts that fall in the current quest week
-  const weekStart = getCurrentMondayUTC();
-  const weekEnd = new Date(weekStart.getTime() + 7 * 24 * 60 * 60 * 1000);
-  const workoutDate = new Date(workout.startTime);
-  if (workoutDate < weekStart || workoutDate >= weekEnd) return;
+  if (!user?.adventureModeEnabled) return null;
 
   const quest = await getOrCreateCurrentQuest(userId);
-  if (quest.status !== 'active') return;
+  if (quest.status !== 'active') return quest;
 
-  const newEarned = quest.earnedSeconds + workout.elapsedSeconds;
+  const weekStart = getCurrentMondayUTC();
+  const weekEnd = new Date(weekStart.getTime() + 7 * 24 * 60 * 60 * 1000);
+
+  // Sum all workouts for the current week
+  const agg = await prisma.workout.aggregate({
+    where: { userId, startTime: { gte: weekStart, lt: weekEnd } },
+    _sum: { elapsedSeconds: true },
+  });
+  const newEarned = agg._sum.elapsedSeconds ?? 0;
   const pct = newEarned / quest.targetSeconds;
 
   const beats = Array.isArray(quest.narrativeBeats) ? [...quest.narrativeBeats] : [];
@@ -77,31 +80,55 @@ async function updateQuestProgress(userId, workout) {
   for (const [num, threshold, field] of WAYPOINTS) {
     if (!quest[field] && pct >= threshold) {
       updates[field] = true;
-
-      // Try to get weather for the narrative beat
-      let weather = null;
-      try {
-        const tp = await prisma.trackPoint.findFirst({
-          where: { workoutId: workout.id },
-          orderBy: { sequence: 'asc' },
-          select: { latitude: true, longitude: true },
+      if (user.adventureCharacterArchetype) {
+        // Use the most recent workout in the week for narrative context
+        const triggerWorkout = await prisma.workout.findFirst({
+          where: { userId, startTime: { gte: weekStart, lt: weekEnd } },
+          orderBy: { startTime: 'desc' },
         });
-        if (tp?.latitude != null && tp?.longitude != null) {
-          weather = await getHistoricalWeather(tp.latitude, tp.longitude, new Date(workout.startTime));
+        if (triggerWorkout) {
+          let weather = null;
+          try {
+            const tp = await prisma.trackPoint.findFirst({
+              where: { workoutId: triggerWorkout.id },
+              orderBy: { sequence: 'asc' },
+              select: { latitude: true, longitude: true },
+            });
+            if (tp?.latitude != null && tp?.longitude != null) {
+              weather = await getHistoricalWeather(tp.latitude, tp.longitude, new Date(triggerWorkout.startTime));
+            }
+          } catch { /* skip */ }
+          const text = generateNarrativeBeat(num, user.adventureCharacterArchetype, triggerWorkout, weather);
+          beats.push({ waypointNum: num, text, triggeredAt: new Date().toISOString() });
         }
-      } catch {
-        // Weather is optional — skip silently
       }
-
-      const text = generateNarrativeBeat(num, user.adventureCharacterArchetype, workout, weather);
-      beats.push({ waypointNum: num, text, triggeredAt: new Date().toISOString() });
     }
   }
 
   if (pct >= 1) updates.status = 'completed';
   updates.narrativeBeats = beats;
 
-  await prisma.quest.update({ where: { id: quest.id }, data: updates });
+  return prisma.quest.update({ where: { id: quest.id }, data: updates });
 }
 
-module.exports = { getOrCreateCurrentQuest, updateQuestProgress, DIFFICULTY_SECONDS, getCurrentMondayUTC };
+/**
+ * Incremental update called fire-and-forget after a new workout is recorded.
+ * Delegates to recalculateQuestProgress so progress is always accurate.
+ */
+async function updateQuestProgress(userId, workout) {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { adventureModeEnabled: true, adventureCharacterArchetype: true },
+  });
+  if (!user?.adventureModeEnabled || !user.adventureCharacterArchetype) return;
+
+  // Only bother if the workout falls in the current week
+  const weekStart = getCurrentMondayUTC();
+  const weekEnd = new Date(weekStart.getTime() + 7 * 24 * 60 * 60 * 1000);
+  const workoutDate = new Date(workout.startTime);
+  if (workoutDate < weekStart || workoutDate >= weekEnd) return;
+
+  await recalculateQuestProgress(userId);
+}
+
+module.exports = { getOrCreateCurrentQuest, recalculateQuestProgress, updateQuestProgress, DIFFICULTY_SECONDS, getCurrentMondayUTC };

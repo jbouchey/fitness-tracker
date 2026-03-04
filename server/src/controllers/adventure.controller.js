@@ -1,6 +1,6 @@
 const { catchAsync } = require('../middleware/errorHandler');
 const prisma = require('../config/database');
-const { getOrCreateCurrentQuest, DIFFICULTY_SECONDS } = require('../services/quest.service');
+const { getOrCreateCurrentQuest, recalculateQuestProgress, DIFFICULTY_SECONDS } = require('../services/quest.service');
 
 const VALID_ARCHETYPES = ['wizard', 'archer', 'warrior'];
 const VALID_GENDERS = ['male', 'female'];
@@ -73,7 +73,8 @@ const getQuest = catchAsync(async (req, res) => {
     return res.json({ quest: null });
   }
 
-  const quest = await getOrCreateCurrentQuest(req.user.id);
+  // Recalculate from all workouts this week so progress is always accurate
+  const quest = await recalculateQuestProgress(req.user.id);
   res.json({ quest });
 });
 
