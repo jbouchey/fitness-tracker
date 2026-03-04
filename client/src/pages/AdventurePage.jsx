@@ -116,12 +116,10 @@ export default function AdventurePage() {
       </div>
 
       {/* Character card */}
-      <div className="relative rounded-xl overflow-hidden mb-4">
-        <img
-          src={`/homelands/${color}.png`}
-          alt={`${color} homeland`}
-          className="absolute inset-0 w-full h-full object-cover"
-        />
+      <div
+        className="relative rounded-xl overflow-hidden mb-4 min-h-40"
+        style={{ backgroundImage: `url(/homelands/${color}.png)`, backgroundSize: 'cover', backgroundPosition: 'center' }}
+      >
         <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-black/30 to-transparent" />
         <div className="relative flex items-end gap-4 p-4">
           <div className="flex-shrink-0 w-32 rounded-xl overflow-hidden">
