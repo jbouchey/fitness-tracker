@@ -109,7 +109,7 @@ export default function ProfilePage() {
           <h2 className="text-base font-semibold text-gray-800">Strava</h2>
         </div>
         <p className="text-sm text-gray-500 mb-4">
-          Connect Strava to automatically sync new activities from COROS.
+          Automatically sync new activities from any device that connects to Strava — COROS, Garmin, Apple Watch, and more.
         </p>
         {stravaMessage && (
           <p className={`text-sm mb-3 ${stravaMessage.type === 'success' ? 'text-green-600' : 'text-red-600'}`}>
