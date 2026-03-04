@@ -117,7 +117,7 @@ export default function AdventurePage() {
 
       {/* Character card */}
       <div className="bg-white rounded-xl border border-gray-100 p-4 mb-4 flex items-end gap-4">
-        <div className="flex-shrink-0 w-20 rounded-xl overflow-hidden">
+        <div className="flex-shrink-0 w-32 rounded-xl overflow-hidden">
           <img
             src={`/characters/${archetype}-${gender}-${color}.png`}
             alt={`${color} ${archetype}`}
