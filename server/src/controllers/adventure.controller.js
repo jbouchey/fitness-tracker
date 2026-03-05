@@ -1,6 +1,6 @@
 const { catchAsync } = require('../middleware/errorHandler');
 const prisma = require('../config/database');
-const { getOrCreateCurrentQuest, recalculateQuestProgress, DIFFICULTY_SECONDS, getCurrentMondayUTC } = require('../services/quest.service');
+const { getOrCreateCurrentQuest, claimWorkouts, DIFFICULTY_SECONDS, getCurrentMondayUTC } = require('../services/quest.service');
 const { getUserLoot } = require('../services/loot.service');
 
 const VALID_ARCHETYPES = ['wizard', 'archer', 'warrior'];
@@ -56,7 +56,6 @@ const toggleMode = catchAsync(async (req, res) => {
     return res.status(400).json({ error: 'enabled must be a boolean.' });
   }
 
-  // Only set adventureStartedAt on first-ever enable (never overwrite)
   const data = { adventureModeEnabled: enabled };
   if (enabled) {
     const existing = await prisma.user.findUnique({
@@ -77,7 +76,7 @@ const toggleMode = catchAsync(async (req, res) => {
   res.json({ user });
 });
 
-/** GET /api/adventure/quest — returns current week's quest (creates if needed) */
+/** GET /api/adventure/quest — returns current week's stored quest (no auto-recalculation). */
 const getQuest = catchAsync(async (req, res) => {
   const user = await prisma.user.findUnique({
     where: { id: req.user.id },
@@ -88,12 +87,11 @@ const getQuest = catchAsync(async (req, res) => {
     return res.json({ quest: null });
   }
 
-  // Recalculate from all workouts this week so progress is always accurate
-  const quest = await recalculateQuestProgress(req.user.id);
+  const quest = await getOrCreateCurrentQuest(req.user.id);
   res.json({ quest });
 });
 
-/** PATCH /api/adventure/difficulty — update difficulty preference + current quest if unlocked */
+/** PATCH /api/adventure/difficulty */
 const setDifficulty = catchAsync(async (req, res) => {
   const { difficulty } = req.body;
 
@@ -101,14 +99,12 @@ const setDifficulty = catchAsync(async (req, res) => {
     return res.status(400).json({ error: 'Invalid difficulty.' });
   }
 
-  // Update user preference
   const user = await prisma.user.update({
     where: { id: req.user.id },
     data: { adventureDifficulty: difficulty },
     select: ADVENTURE_SELECT,
   });
 
-  // If current quest has no progress yet, update its difficulty too
   const quest = await getOrCreateCurrentQuest(req.user.id);
   let updatedQuest = quest;
   if (quest.earnedSeconds === 0) {
@@ -121,23 +117,34 @@ const setDifficulty = catchAsync(async (req, res) => {
   res.json({ user, quest: updatedQuest });
 });
 
-/** DELETE /api/adventure/quest — deletes current week's quest for testing */
+/** DELETE /api/adventure/quest — resets current week's quest + unflags workouts (for testing) */
 const resetQuest = catchAsync(async (req, res) => {
   const weekStart = getCurrentMondayUTC();
+  const weekEnd = new Date(weekStart.getTime() + 7 * 24 * 60 * 60 * 1000);
+
   await prisma.quest.deleteMany({ where: { userId: req.user.id, weekStart } });
+
+  // Reset claimed flag so this week's workouts show as pending again
+  await prisma.workout.updateMany({
+    where: { userId: req.user.id, startTime: { gte: weekStart, lt: weekEnd } },
+    data: { adventureClaimed: false },
+  });
+
   res.json({ ok: true });
 });
 
-/** GET /api/adventure/loot — returns all loot for the user */
+/** GET /api/adventure/loot */
 const getLoot = catchAsync(async (req, res) => {
   const loot = await getUserLoot(req.user.id);
   res.json({ loot });
 });
 
 /**
- * GET /api/adventure/world — returns world map data for the current week.
- * activeDaysThisWeek: count of distinct UTC days with at least one workout.
- * quest: current week's quest (status, difficulty) — null if none exists yet.
+ * GET /api/adventure/world
+ * claimedDays:  distinct UTC days with at least one claimed workout this week.
+ * pendingDays:  distinct UTC days with unclaimed workouts (ready to claim).
+ * pendingCount: raw count of unclaimed workouts.
+ * quest:        { status, difficulty, earnedSeconds, targetSeconds }
  */
 const getWorld = catchAsync(async (req, res) => {
   const weekStart = getCurrentMondayUTC();
@@ -145,19 +152,40 @@ const getWorld = catchAsync(async (req, res) => {
 
   const workouts = await prisma.workout.findMany({
     where: { userId: req.user.id, startTime: { gte: weekStart, lt: weekEnd } },
-    select: { startTime: true },
+    select: { startTime: true, adventureClaimed: true },
   });
 
-  // Count distinct UTC calendar days
-  const days = new Set(workouts.map((w) => new Date(w.startTime).toISOString().slice(0, 10)));
-  const activeDaysThisWeek = days.size;
+  const claimedDates = new Set();
+  const pendingDates = new Set();
+  let pendingCount = 0;
+
+  for (const w of workouts) {
+    const day = new Date(w.startTime).toISOString().slice(0, 10);
+    if (w.adventureClaimed) {
+      claimedDates.add(day);
+    } else {
+      pendingDates.add(day);
+      pendingCount++;
+    }
+  }
 
   const quest = await prisma.quest.findFirst({
     where: { userId: req.user.id, weekStart },
     select: { status: true, difficulty: true, earnedSeconds: true, targetSeconds: true },
   });
 
-  res.json({ activeDaysThisWeek, quest });
+  res.json({
+    claimedDays: claimedDates.size,
+    pendingDays: pendingDates.size,
+    pendingCount,
+    quest,
+  });
 });
 
-module.exports = { updateCharacter, toggleMode, getQuest, setDifficulty, resetQuest, getLoot, getWorld };
+/** POST /api/adventure/claim — process all unclaimed workouts for the current week */
+const claim = catchAsync(async (req, res) => {
+  const result = await claimWorkouts(req.user.id);
+  res.json(result);
+});
+
+module.exports = { updateCharacter, toggleMode, getQuest, setDifficulty, resetQuest, getLoot, getWorld, claim };

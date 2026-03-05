@@ -93,6 +93,8 @@ model Workout {
 
   stravaActivityId String? @unique
 
+  adventureClaimed Boolean @default(false) // true once the user has claimed this workout in adventure mode
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

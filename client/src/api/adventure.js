@@ -15,4 +15,6 @@ export const adventureApi = {
     api.get('/adventure/loot').then((r) => r.data),
   getWorld: () =>
     api.get('/adventure/world').then((r) => r.data),
+  claim: () =>
+    api.post('/adventure/claim').then((r) => r.data),
 };
