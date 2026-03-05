@@ -15,6 +15,7 @@ import NotFoundPage from './pages/NotFoundPage';
 import AdventurePage from './pages/AdventurePage';
 import AdventureSelectPage from './pages/AdventureSelectPage';
 import LootPage from './pages/LootPage';
+import WorldMapPage from './pages/WorldMapPage';
 
 export default function App() {
   return (
@@ -36,6 +37,7 @@ export default function App() {
             <Route path="/adventure" element={<AdventurePage />} />
             <Route path="/adventure/select" element={<AdventureSelectPage />} />
             <Route path="/adventure/loot" element={<LootPage />} />
+            <Route path="/adventure/world" element={<WorldMapPage />} />
           </Route>
         </Route>
 

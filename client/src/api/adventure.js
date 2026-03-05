@@ -13,4 +13,6 @@ export const adventureApi = {
     api.delete('/adventure/quest').then((r) => r.data),
   getLoot: () =>
     api.get('/adventure/loot').then((r) => r.data),
+  getWorld: () =>
+    api.get('/adventure/world').then((r) => r.data),
 };

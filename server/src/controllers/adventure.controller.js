@@ -134,4 +134,30 @@ const getLoot = catchAsync(async (req, res) => {
   res.json({ loot });
 });
 
-module.exports = { updateCharacter, toggleMode, getQuest, setDifficulty, resetQuest, getLoot };
+/**
+ * GET /api/adventure/world — returns world map data for the current week.
+ * activeDaysThisWeek: count of distinct UTC days with at least one workout.
+ * quest: current week's quest (status, difficulty) — null if none exists yet.
+ */
+const getWorld = catchAsync(async (req, res) => {
+  const weekStart = getCurrentMondayUTC();
+  const weekEnd = new Date(weekStart.getTime() + 7 * 24 * 60 * 60 * 1000);
+
+  const workouts = await prisma.workout.findMany({
+    where: { userId: req.user.id, startTime: { gte: weekStart, lt: weekEnd } },
+    select: { startTime: true },
+  });
+
+  // Count distinct UTC calendar days
+  const days = new Set(workouts.map((w) => new Date(w.startTime).toISOString().slice(0, 10)));
+  const activeDaysThisWeek = days.size;
+
+  const quest = await prisma.quest.findFirst({
+    where: { userId: req.user.id, weekStart },
+    select: { status: true, difficulty: true, earnedSeconds: true, targetSeconds: true },
+  });
+
+  res.json({ activeDaysThisWeek, quest });
+});
+
+module.exports = { updateCharacter, toggleMode, getQuest, setDifficulty, resetQuest, getLoot, getWorld };

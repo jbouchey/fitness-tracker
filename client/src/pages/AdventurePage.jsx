@@ -258,14 +258,23 @@ export default function AdventurePage() {
         )}
       </div>
 
-      {/* Treasure chest link */}
-      <button
-        onClick={() => navigate('/adventure/loot')}
-        className="w-full mb-3 flex items-center justify-center gap-2 py-3 rounded-xl bg-amber-50 border border-amber-200 text-amber-700 font-semibold text-sm hover:bg-amber-100 transition-colors"
-      >
-        <span className="text-xl">🧰</span>
-        Treasure Chest
-      </button>
+      {/* World Map + Treasure Chest links */}
+      <div className="grid grid-cols-2 gap-3 mb-3">
+        <button
+          onClick={() => navigate('/adventure/world')}
+          className="flex items-center justify-center gap-2 py-3 rounded-xl bg-gray-800 border border-gray-700 text-gray-100 font-semibold text-sm hover:bg-gray-700 transition-colors"
+        >
+          <span className="text-xl">🗺️</span>
+          World Map
+        </button>
+        <button
+          onClick={() => navigate('/adventure/loot')}
+          className="flex items-center justify-center gap-2 py-3 rounded-xl bg-amber-50 border border-amber-200 text-amber-700 font-semibold text-sm hover:bg-amber-100 transition-colors"
+        >
+          <span className="text-xl">🧰</span>
+          Chest
+        </button>
+      </div>
 
       <button
         onClick={handleExit}
