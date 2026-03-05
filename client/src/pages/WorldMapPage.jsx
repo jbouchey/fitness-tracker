@@ -93,7 +93,6 @@ export default function WorldMapPage() {
                 const meta = REGION_META[region];
                 const isActive = i < activeDays;
                 const isCurrent = i === currentTile;
-                const isPast = i < currentTile;
 
                 return (
                   <div
@@ -189,7 +188,7 @@ export default function WorldMapPage() {
                 </div>
               ))}
               <div className="flex items-center gap-2 rounded-lg px-3 py-2 bg-purple-900 bg-opacity-40">
-                <span className="text-lg">\u{1F300}</span>
+                <span className="text-lg">🌀</span>
                 <span className="text-xs font-medium text-purple-300">Mystery Zone</span>
               </div>
             </div>
