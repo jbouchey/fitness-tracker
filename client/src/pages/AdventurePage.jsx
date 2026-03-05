@@ -258,6 +258,15 @@ export default function AdventurePage() {
         )}
       </div>
 
+      {/* Treasure chest link */}
+      <button
+        onClick={() => navigate('/adventure/loot')}
+        className="w-full mb-3 flex items-center justify-center gap-2 py-3 rounded-xl bg-amber-50 border border-amber-200 text-amber-700 font-semibold text-sm hover:bg-amber-100 transition-colors"
+      >
+        <span className="text-xl">🧰</span>
+        Treasure Chest
+      </button>
+
       <button
         onClick={handleExit}
         disabled={exiting}

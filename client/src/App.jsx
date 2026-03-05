@@ -14,6 +14,7 @@ import VerifyEmailPage from './pages/VerifyEmailPage';
 import NotFoundPage from './pages/NotFoundPage';
 import AdventurePage from './pages/AdventurePage';
 import AdventureSelectPage from './pages/AdventureSelectPage';
+import LootPage from './pages/LootPage';
 
 export default function App() {
   return (
@@ -34,6 +35,7 @@ export default function App() {
             <Route path="/records" element={<RecordsPage />} />
             <Route path="/adventure" element={<AdventurePage />} />
             <Route path="/adventure/select" element={<AdventureSelectPage />} />
+            <Route path="/adventure/loot" element={<LootPage />} />
           </Route>
         </Route>
 

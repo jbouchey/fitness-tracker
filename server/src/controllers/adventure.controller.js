@@ -1,6 +1,7 @@
 const { catchAsync } = require('../middleware/errorHandler');
 const prisma = require('../config/database');
 const { getOrCreateCurrentQuest, recalculateQuestProgress, DIFFICULTY_SECONDS, getCurrentMondayUTC } = require('../services/quest.service');
+const { getUserLoot } = require('../services/loot.service');
 
 const VALID_ARCHETYPES = ['wizard', 'archer', 'warrior'];
 const VALID_GENDERS = ['male', 'female'];
@@ -127,4 +128,10 @@ const resetQuest = catchAsync(async (req, res) => {
   res.json({ ok: true });
 });
 
-module.exports = { updateCharacter, toggleMode, getQuest, setDifficulty, resetQuest };
+/** GET /api/adventure/loot — returns all loot for the user */
+const getLoot = catchAsync(async (req, res) => {
+  const loot = await getUserLoot(req.user.id);
+  res.json({ loot });
+});
+
+module.exports = { updateCharacter, toggleMode, getQuest, setDifficulty, resetQuest, getLoot };

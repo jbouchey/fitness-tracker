@@ -2,6 +2,7 @@ const prisma = require('../config/database');
 const { getHistoricalWeather } = require('../utils/weatherApi');
 const { generateNarrativeBeat } = require('../utils/narrativeEngine');
 const { recalculateXp } = require('./xp.service');
+const { grantQuestLoot, updateStreakAndGrantLoot } = require('./loot.service');
 
 const DIFFICULTY_SECONDS = {
   easy:   1 * 3600,   //  1 hour
@@ -106,13 +107,22 @@ async function recalculateQuestProgress(userId) {
     }
   }
 
+  const wasJustCompleted = !quest.questCompleted && pct >= 1;
   if (pct >= 1) updates.status = 'completed';
   updates.narrativeBeats = beats;
 
   const updated = await prisma.quest.update({ where: { id: quest.id }, data: updates });
 
-  // Recalculate XP fire-and-forget — catches both new workout minutes and quest completion bonus
+  // Recalculate XP fire-and-forget
   setImmediate(() => recalculateXp(userId).catch(() => {}));
+
+  // Grant loot + update streak on first completion
+  if (wasJustCompleted) {
+    setImmediate(() => Promise.all([
+      grantQuestLoot(userId, quest.difficulty).catch(() => {}),
+      updateStreakAndGrantLoot(userId, quest.weekStart).catch(() => {}),
+    ]));
+  }
 
   return updated;
 }

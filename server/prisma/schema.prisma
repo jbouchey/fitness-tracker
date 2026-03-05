@@ -50,9 +50,11 @@ model User {
   adventureDifficulty         String   @default("medium") // "easy" | "medium" | "hard" | "epic"
   adventureStartedAt          DateTime? // when adventure mode was first enabled
   adventureTotalXp            Int      @default(0) // cumulative XP earned since adventureStartedAt
+  adventureQuestStreak        Int      @default(0) // consecutive weeks with a completed quest
 
   workouts Workout[]
   quests   Quest[]
+  loot     Loot[]
 
   @@map("users")
 }
@@ -164,4 +166,18 @@ model Quest {
   @@unique([userId, weekStart])
   @@index([userId, weekStart(sort: Desc)])
   @@map("quests")
+}
+
+model Loot {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  itemSlug  String   // e.g. "copper_ring"
+  rarity    String   // "common" | "uncommon" | "rare" | "epic" | "legendary"
+  source    String   // "quest_completion" | "streak_bonus"
+  earnedAt  DateTime @default(now())
+
+  @@index([userId, earnedAt(sort: Desc)])
+  @@map("loot")
 }

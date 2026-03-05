@@ -11,4 +11,6 @@ export const adventureApi = {
     api.patch('/adventure/difficulty', { difficulty }).then((r) => r.data),
   resetQuest: () =>
     api.delete('/adventure/quest').then((r) => r.data),
+  getLoot: () =>
+    api.get('/adventure/loot').then((r) => r.data),
 };
