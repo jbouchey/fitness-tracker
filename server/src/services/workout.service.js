@@ -211,7 +211,7 @@ async function getActivityTrends(userId, period, utcOffset = 0, types = null) {
     : Prisma.sql``;
 
   if (period === 'week') {
-    // Rolling last 7 days, grouped by local day
+    // Current week Mon–Sun in user's local time, grouped by local day
     const rows = await prisma.$queryRaw`
       SELECT
         DATE_TRUNC('day', "startTime" - ${offsetLiteral} * INTERVAL '1 minute')::DATE AS day,
@@ -221,7 +221,8 @@ async function getActivityTrends(userId, period, utcOffset = 0, types = null) {
       FROM "workouts"
       WHERE "userId" = ${userId}
         ${typeFilter}
-        AND "startTime" >= NOW() - INTERVAL '6 days'
+        AND "startTime" - ${offsetLiteral} * INTERVAL '1 minute' >= DATE_TRUNC('week', NOW() - ${offsetLiteral} * INTERVAL '1 minute')
+        AND "startTime" - ${offsetLiteral} * INTERVAL '1 minute' <  DATE_TRUNC('week', NOW() - ${offsetLiteral} * INTERVAL '1 minute') + INTERVAL '7 days'
       GROUP BY 1
       ORDER BY 1
     `;

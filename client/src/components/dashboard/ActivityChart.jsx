@@ -12,12 +12,18 @@ function buildWeeklyScaffold(rows) {
     lookup[key] = row;
   }
 
-  // Build 7 slots: 6 days ago → today
+  // Build 7 slots: Monday → Sunday of the current week
+  const now = new Date();
+  const dayOfWeek = now.getDay(); // 0=Sun, 1=Mon … 6=Sat
+  const daysFromMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+  const monday = new Date(now);
+  monday.setDate(now.getDate() - daysFromMonday);
+
   const result = [];
-  for (let i = 6; i >= 0; i--) {
-    const d = new Date();
-    d.setDate(d.getDate() - i);
-    d.setHours(12, 0, 0, 0); // use noon so toISOString gives the correct local date
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(monday);
+    d.setDate(monday.getDate() + i);
+    d.setHours(12, 0, 0, 0); // noon avoids DST edge cases
     const key = d.toISOString().slice(0, 10);
     const found = lookup[key];
     result.push({
