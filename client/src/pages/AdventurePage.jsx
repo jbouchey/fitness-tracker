@@ -3,6 +3,7 @@ import { useNavigate, Navigate } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 import { adventureApi } from '../api/adventure';
 import { formatDuration } from '../utils/formatters';
+import { xpProgress, getMilestoneTitle } from '../utils/adventureUtils';
 
 
 const DIFFICULTY_LABELS = {
@@ -30,7 +31,9 @@ export default function AdventurePage() {
     return <Navigate to="/adventure/select" replace />;
   }
 
-  const { adventureCharacterArchetype: archetype, adventureCharacterGender: gender, adventureCharacterColor: color } = user;
+  const { adventureCharacterArchetype: archetype, adventureCharacterGender: gender, adventureCharacterColor: color, adventureTotalXp: totalXp = 0 } = user;
+  const { level, currentXp, neededXp, pct: xpPct } = xpProgress(totalXp);
+  const milestoneTitle = getMilestoneTitle(level);
 
   function fetchQuest(showSpinner = false) {
     if (showSpinner) setRefreshing(true);
@@ -129,10 +132,18 @@ export default function AdventurePage() {
               className="w-full object-contain"
             />
           </div>
-          <div>
+          <div className="flex-1 min-w-0">
             <p className="text-xs text-white/60 uppercase tracking-wide mb-0.5">Your Character</p>
             <h2 className="text-lg font-bold text-white capitalize">{color} {archetype}</h2>
-            <p className="text-sm text-white/70 capitalize">{gender}</p>
+            <p className="text-xs text-white/70 capitalize mb-2">{milestoneTitle} · Level {level}</p>
+            {/* XP bar */}
+            <div className="w-full bg-white/20 rounded-full h-1.5 mb-0.5">
+              <div
+                className="h-1.5 rounded-full bg-yellow-400 transition-all duration-500"
+                style={{ width: `${xpPct}%` }}
+              />
+            </div>
+            <p className="text-xs text-white/50">{level < 99 ? `${currentXp} / ${neededXp} XP` : 'Max Level'}</p>
           </div>
           <button
             onClick={() => navigate('/adventure/select')}

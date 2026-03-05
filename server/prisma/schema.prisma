@@ -43,11 +43,13 @@ model User {
   stravaRefreshToken String?
   stravaTokenExpiry  DateTime?
 
-  adventureModeEnabled        Boolean @default(false)
-  adventureCharacterArchetype String? // "wizard" | "archer" | "warrior"
-  adventureCharacterGender    String? // "male" | "female"
-  adventureCharacterColor     String? // "blue" | "green" | "red" | "yellow"
-  adventureDifficulty         String  @default("medium") // "easy" | "medium" | "hard" | "epic"
+  adventureModeEnabled        Boolean  @default(false)
+  adventureCharacterArchetype String?  // "wizard" | "archer" | "warrior"
+  adventureCharacterGender    String?  // "male" | "female"
+  adventureCharacterColor     String?  // "blue" | "green" | "red" | "yellow"
+  adventureDifficulty         String   @default("medium") // "easy" | "medium" | "hard" | "epic"
+  adventureStartedAt          DateTime? // when adventure mode was first enabled
+  adventureTotalXp            Int      @default(0) // cumulative XP earned since adventureStartedAt
 
   workouts Workout[]
   quests   Quest[]

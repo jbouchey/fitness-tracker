@@ -18,6 +18,8 @@ const ADVENTURE_SELECT = {
   adventureCharacterGender: true,
   adventureCharacterColor: true,
   adventureDifficulty: true,
+  adventureStartedAt: true,
+  adventureTotalXp: true,
 };
 
 const updateCharacter = catchAsync(async (req, res) => {
@@ -53,9 +55,21 @@ const toggleMode = catchAsync(async (req, res) => {
     return res.status(400).json({ error: 'enabled must be a boolean.' });
   }
 
+  // Only set adventureStartedAt on first-ever enable (never overwrite)
+  const data = { adventureModeEnabled: enabled };
+  if (enabled) {
+    const existing = await prisma.user.findUnique({
+      where: { id: req.user.id },
+      select: { adventureStartedAt: true },
+    });
+    if (!existing?.adventureStartedAt) {
+      data.adventureStartedAt = new Date();
+    }
+  }
+
   const user = await prisma.user.update({
     where: { id: req.user.id },
-    data: { adventureModeEnabled: enabled },
+    data,
     select: ADVENTURE_SELECT,
   });
 
