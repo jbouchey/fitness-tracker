@@ -1,5 +1,7 @@
 import { useEffect, useState, useCallback, useMemo } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { useAuthStore } from '../store/authStore';
+import { adventureApi } from '../api/adventure';
 import { useWorkoutStore } from '../store/workoutStore';
 import SportTypeFilter from '../components/dashboard/SportTypeFilter';
 import SummaryStats from '../components/dashboard/SummaryStats';
@@ -33,6 +35,8 @@ function getSportTypes(value) {
 }
 
 export default function DashboardPage() {
+  const navigate = useNavigate();
+  const { user } = useAuthStore();
   const { workouts, pagination, filters, isLoading, error, setFilters, setPage } =
     useWorkoutStore();
 
@@ -43,6 +47,7 @@ export default function DashboardPage() {
     () => localStorage.getItem(PERIOD_STORAGE_KEY) || 'week'
   );
   const [trendData, setTrendData] = useState([]);
+  const [adventureNudge, setAdventureNudge] = useState(null); // { pendingCount, pendingDays }
 
   // Stable reference — only recomputed when sportFilter changes.
   // Without useMemo, getSportTypes creates a new array every render, which
@@ -54,6 +59,16 @@ export default function DashboardPage() {
   useEffect(() => {
     setFilters(getSportFilterUpdates(sportFilter));
   }, []);
+
+  // Fetch adventure nudge for users in adventure mode
+  useEffect(() => {
+    if (!user?.adventureModeEnabled) return;
+    adventureApi.getWorld()
+      .then(({ pendingCount, pendingDays }) => {
+        if (pendingCount > 0) setAdventureNudge({ pendingCount, pendingDays });
+      })
+      .catch(() => {});
+  }, [user?.adventureModeEnabled]);
 
   const handleSportFilterChange = useCallback((value) => {
     setSportFilter(value);
@@ -74,6 +89,25 @@ export default function DashboardPage() {
           ⚔ Adventure Mode
         </Link>
       </div>
+
+      {/* Adventure nudge — shown when expeditions are pending */}
+      {adventureNudge && (
+        <div
+          className="flex items-center gap-4 bg-indigo-600 rounded-xl px-4 py-3 mb-6 cursor-pointer hover:bg-indigo-500 transition-colors"
+          onClick={() => navigate('/adventure')}
+        >
+          <span className="text-2xl flex-shrink-0">&#x2694;&#xFE0F;</span>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-bold text-white">
+              {adventureNudge.pendingCount} expedition{adventureNudge.pendingCount !== 1 ? 's' : ''} ready to claim
+            </p>
+            <p className="text-xs text-indigo-200">
+              {adventureNudge.pendingDays} new day{adventureNudge.pendingDays !== 1 ? 's' : ''} of adventure awaits
+            </p>
+          </div>
+          <span className="text-white text-sm font-semibold flex-shrink-0">Continue &#x2192;</span>
+        </div>
+      )}
 
       <SportTypeFilter value={sportFilter} onChange={handleSportFilterChange} />
 

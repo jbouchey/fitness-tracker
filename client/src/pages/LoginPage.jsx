@@ -19,7 +19,7 @@ export default function LoginPage() {
     try {
       const { user, token } = await authApi.login(form);
       login(user, token);
-      navigate('/');
+      navigate(user.adventureModeEnabled ? '/adventure' : '/');
     } catch (err) {
       setError(err.response?.data?.error || 'Login failed. Please try again.');
     } finally {
