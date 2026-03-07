@@ -50,7 +50,7 @@ export default function WorldMapPage() {
       .finally(() => setLoading(false));
   }, []);
 
-  const activeDays = worldData?.activeDaysThisWeek ?? 0;
+  const activeDays = worldData?.claimedDays ?? 0;
   const quest = worldData?.quest ?? null;
   const questComplete = quest?.status === 'completed';
   const difficulty = quest?.difficulty ?? 'medium';
@@ -173,6 +173,39 @@ export default function WorldMapPage() {
                   {7 - activeDays} more active day{7 - activeDays !== 1 ? 's' : ''} to reach the frontier.
                   Complete your quest to unlock the Mystery World.
                 </p>
+              </div>
+            )}
+          </div>
+
+          {/* Expedition Log */}
+          <div className="mb-6">
+            <p className="text-xs text-gray-400 uppercase tracking-wide mb-3">Expedition Log</p>
+            {!quest || !Array.isArray(quest.narrativeBeats) || quest.narrativeBeats.length === 0 ? (
+              <div className="bg-gray-800 rounded-xl p-4 border border-gray-700">
+                <p className="text-sm text-gray-500 italic">Complete your first expedition to begin the log.</p>
+              </div>
+            ) : (
+              <div className="flex flex-col gap-3">
+                {[...quest.narrativeBeats].map((beat, i) => {
+                  const date = beat.triggeredAt
+                    ? new Date(beat.triggeredAt).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })
+                    : null;
+                  const typeEmoji = {
+                    TRAIL_RUN: '\u{1F3D4}\uFE0F', ROAD_RUN: '\u{1F3C3}', HIKE: '\u26F0\uFE0F',
+                    CYCLING: '\u{1F6B4}', STRENGTH: '\u{1F4AA}', OTHER: '\u2605',
+                  }[beat.workoutType] ?? '\u2605';
+                  return (
+                    <div key={i} className="bg-gray-800 rounded-xl p-4 border border-gray-700">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-sm font-semibold text-white">
+                          {typeEmoji} {beat.workoutName ?? 'Expedition'}
+                        </span>
+                        {date && <span className="text-xs text-gray-500">{date}</span>}
+                      </div>
+                      <p className="text-sm text-gray-300 italic leading-relaxed">"{beat.text}"</p>
+                    </div>
+                  );
+                })}
               </div>
             )}
           </div>

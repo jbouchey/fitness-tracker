@@ -171,7 +171,7 @@ const getWorld = catchAsync(async (req, res) => {
 
   const quest = await prisma.quest.findFirst({
     where: { userId: req.user.id, weekStart },
-    select: { status: true, difficulty: true, earnedSeconds: true, targetSeconds: true },
+    select: { status: true, difficulty: true, earnedSeconds: true, targetSeconds: true, narrativeBeats: true },
   });
 
   res.json({
