@@ -6,13 +6,6 @@ import { workoutsApi } from '../api/workouts';
 import { formatDuration, formatDistance, formatDate, formatWorkoutType } from '../utils/formatters';
 import { xpProgress, getMilestoneTitle } from '../utils/adventureUtils';
 
-const DIFFICULTY_LABELS = {
-  easy:   'Easy \u2014 1 hour',
-  medium: 'Medium \u2014 5 hours',
-  hard:   'Hard \u2014 10 hours',
-  epic:   'Epic \u2014 20 hours',
-};
-
 const REGION_SEQUENCE = {
   blue:   ['blue', 'blue', 'green', 'green', 'red',    'yellow', 'yellow'],
   green:  ['green','green','red',   'red',   'yellow', 'blue',   'blue'  ],
@@ -49,7 +42,7 @@ export default function AdventurePage() {
 
   // Data state
   const [quest, setQuest] = useState(null);
-  const [questLoading, setQuestLoading] = useState(true);
+  const [, setQuestLoading] = useState(true);
   const [worldData, setWorldData] = useState(null);
   const [recentWorkout, setRecentWorkout] = useState(null);
 
@@ -64,7 +57,6 @@ export default function AdventurePage() {
 
   // Misc UI state
   const [exiting, setExiting] = useState(false);
-  const [difficultyChanging, setDifficultyChanging] = useState(false);
   const [resetting, setResetting] = useState(false);
 
   const animTimers = useRef([]);
@@ -203,17 +195,6 @@ export default function AdventurePage() {
       loadAll();
     } catch { /* ignore */ }
     finally { setResetting(false); }
-  }
-
-  async function handleDifficultyChange(difficulty) {
-    if (difficultyChanging) return;
-    setDifficultyChanging(true);
-    try {
-      const { user: updatedUser, quest: updatedQuest } = await adventureApi.setDifficulty(difficulty);
-      updateUser(updatedUser);
-      setQuest(updatedQuest);
-    } catch { /* ignore */ }
-    finally { setDifficultyChanging(false); }
   }
 
   // ── Render helpers ──────────────────────────────────────────────────────────
@@ -398,22 +379,14 @@ export default function AdventurePage() {
 
   return (
     <div className="max-w-lg">
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Adventure Mode</h1>
-        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-indigo-100 text-indigo-700 text-xs font-semibold">
-          <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse" />
-          Active
-        </span>
-      </div>
-
-      {/* Character card */}
+      {/* Character card — compact */}
       <div
-        className="relative rounded-xl overflow-hidden mb-4 min-h-40"
+        className="relative rounded-xl overflow-hidden mb-4"
         style={{ backgroundImage: `url(/homelands/${color}.png)`, backgroundSize: 'cover', backgroundPosition: 'center' }}
       >
-        <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-black/30 to-transparent" />
-        <div className="relative flex items-end gap-4 p-4">
-          <div className="flex-shrink-0 w-32 rounded-xl overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/40 to-transparent" />
+        <div className="relative flex items-center gap-3 p-3">
+          <div className="flex-shrink-0 w-20 rounded-lg overflow-hidden">
             <img
               src={`/characters/${archetype}-${gender}-${color}.png`}
               alt={`${color} ${archetype}`}
@@ -421,9 +394,11 @@ export default function AdventurePage() {
             />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-xs text-white/60 uppercase tracking-wide mb-0.5">Your Character</p>
-            <h2 className="text-lg font-bold text-white capitalize">{color} {archetype}</h2>
-            <p className="text-xs text-white/70 capitalize mb-2">{milestoneTitle} &middot; Level {level}</p>
+            <div className="flex items-baseline gap-2 mb-0.5">
+              <span className="text-xl font-extrabold text-yellow-400">Lv.{level}</span>
+              <span className="text-xs text-white/70 capitalize">{milestoneTitle}</span>
+            </div>
+            <p className="text-sm font-semibold text-white capitalize mb-1.5">{color} {archetype}</p>
             <div className="w-full bg-white/20 rounded-full h-1.5 mb-0.5">
               <div
                 className="h-1.5 rounded-full bg-yellow-400 transition-all duration-500"
@@ -434,7 +409,7 @@ export default function AdventurePage() {
           </div>
           <button
             onClick={() => navigate('/adventure/select')}
-            className="ml-auto text-sm text-white/80 hover:text-white font-medium"
+            className="self-start text-xs text-white/60 hover:text-white transition-colors"
           >
             Change
           </button>
@@ -503,109 +478,28 @@ export default function AdventurePage() {
       </div>
 
       {/* Quest card */}
-      <div className="bg-white rounded-xl border border-gray-100 p-6 mb-6">
-        <div className="flex items-center justify-between mb-1">
-          <h2 className="text-base font-semibold text-gray-800">Weekly Quest</h2>
-          {displayQuest && (
-            <span className={`text-xs font-semibold px-2 py-0.5 rounded-full capitalize ${
-              displayQuest.status === 'completed'
-                ? 'bg-green-100 text-green-700'
-                : 'bg-indigo-50 text-indigo-600'
-            }`}>
-              {displayQuest.status === 'completed' ? 'Complete' : displayQuest.difficulty}
-            </span>
-          )}
-        </div>
-
-        {questLoading ? (
-          <p className="text-sm text-gray-400 mt-3">Loading quest\u2026</p>
-        ) : !displayQuest ? (
-          <p className="text-sm text-gray-400 mt-3 italic">Quest unavailable.</p>
-        ) : (
-          <>
-            {displayQuest.status === 'completed' && (
-              <div className="bg-green-50 border border-green-200 rounded-lg px-4 py-3 mb-4 mt-3">
-                <p className="text-sm font-semibold text-green-700">Quest Complete!</p>
-                <p className="text-xs text-green-600 mt-0.5">You conquered this week&apos;s challenge. New quest starts next Monday.</p>
-              </div>
-            )}
-
-            {/* Progress bar */}
-            <div className="mb-4 mt-3">
-              <div className="flex justify-between text-xs text-gray-500 mb-1">
-                <span>{questPct}% complete</span>
-                <span>{formatDuration(displayQuest.earnedSeconds)} / {formatDuration(displayQuest.targetSeconds)}</span>
-              </div>
-              <div className="bg-gray-100 rounded-full h-2.5">
-                <div
-                  className={`h-2.5 rounded-full transition-all duration-500 ${displayQuest.status === 'completed' ? 'bg-green-500' : 'bg-indigo-500'}`}
-                  style={{ width: `${questPct}%` }}
-                />
-              </div>
-            </div>
-
-            {/* Difficulty picker — only if no progress yet */}
-            {displayQuest.earnedSeconds === 0 && displayQuest.status === 'active' && (
-              <div className="mb-3">
-                <p className="text-xs text-gray-500 mb-2">Choose difficulty:</p>
-                <div className="grid grid-cols-2 gap-2">
-                  {['easy', 'medium', 'hard', 'epic'].map((d) => (
-                    <button
-                      key={d}
-                      onClick={() => handleDifficultyChange(d)}
-                      disabled={difficultyChanging}
-                      className={`py-2 px-3 rounded-lg text-xs font-semibold capitalize transition-colors disabled:opacity-50 ${
-                        displayQuest.difficulty === d
-                          ? 'bg-indigo-600 text-white'
-                          : 'bg-gray-50 border border-gray-200 text-gray-600 hover:bg-gray-100'
-                      }`}
-                    >
-                      {DIFFICULTY_LABELS[d]}
-                    </button>
-                  ))}
-                </div>
-                {pendingCount === 0 && (
-                  <p className="text-xs text-gray-400 mt-3 italic">Upload a workout, then return here to claim your first expedition.</p>
-                )}
-              </div>
-            )}
-
-            {/* Past story beats */}
-            {displayQuest.narrativeBeats?.length > 0 && (
-              <div className="space-y-3 mt-1">
-                <p className="text-xs text-gray-400 uppercase tracking-wide">Expedition Log</p>
-                {[...displayQuest.narrativeBeats].reverse().slice(0, 3).map((beat, i) => (
-                  <div key={i} className="flex gap-3">
-                    <div className="flex-shrink-0 w-6 h-6 rounded-full bg-indigo-100 flex items-center justify-center mt-0.5">
-                      <span className="text-xs">{WORKOUT_EMOJI[beat.workoutType] ?? '\u26A1\uFE0F'}</span>
-                    </div>
-                    <div>
-                      <p className="text-xs font-semibold text-gray-600 truncate">{beat.workoutName}</p>
-                      <p className="text-sm text-gray-700 mt-0.5 leading-relaxed italic">&ldquo;{beat.text}&rdquo;</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </>
-        )}
-      </div>
-
-      {/* World Map + Treasure Chest */}
-      <div className="grid grid-cols-2 gap-3 mb-3">
+      {/* Top-level nav */}
+      <div className="grid grid-cols-3 gap-2 mb-4">
+        <button
+          onClick={() => navigate('/adventure/quest-log')}
+          className="flex flex-col items-center justify-center gap-1 py-3 rounded-xl bg-gray-800 border border-gray-700 text-gray-100 font-semibold text-xs hover:bg-gray-700 transition-colors"
+        >
+          <span className="text-2xl">{'\u{1F4DC}'}</span>
+          Quest Log
+        </button>
         <button
           onClick={() => navigate('/adventure/world')}
-          className="flex items-center justify-center gap-2 py-3 rounded-xl bg-gray-800 border border-gray-700 text-gray-100 font-semibold text-sm hover:bg-gray-700 transition-colors"
+          className="flex flex-col items-center justify-center gap-1 py-3 rounded-xl bg-gray-800 border border-gray-700 text-gray-100 font-semibold text-xs hover:bg-gray-700 transition-colors"
         >
-          <span className="text-xl">{'\u{1F5FA}\uFE0F'}</span>
+          <span className="text-2xl">{'\u{1F5FA}\uFE0F'}</span>
           World Map
         </button>
         <button
           onClick={() => navigate('/adventure/loot')}
-          className="flex items-center justify-center gap-2 py-3 rounded-xl bg-amber-50 border border-amber-200 text-amber-700 font-semibold text-sm hover:bg-amber-100 transition-colors"
+          className="flex flex-col items-center justify-center gap-1 py-3 rounded-xl bg-amber-950 border border-amber-800 text-amber-300 font-semibold text-xs hover:bg-amber-900 transition-colors"
         >
-          <span className="text-xl">{'\u{1F9F0}'}</span>
-          Chest
+          <span className="text-2xl">{'\u{1F9F0}'}</span>
+          Treasure Chest
         </button>
       </div>
 
