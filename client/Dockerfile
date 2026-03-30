@@ -11,7 +11,7 @@ ENV VITE_MAPBOX_TOKEN=$VITE_MAPBOX_TOKEN
 ENV VITE_APP_NAME=$VITE_APP_NAME
 
 COPY client/package.json client/package-lock.json* ./
-RUN npm ci
+RUN npm install
 
 COPY client/ .
 
