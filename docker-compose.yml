@@ -38,18 +38,15 @@ services:
       - "3001"
 
   client:
-    build:
-      context: .
-      dockerfile: client/Dockerfile
-      args:
-        VITE_API_URL: ${VITE_API_URL}
-        VITE_MAPBOX_TOKEN: ${VITE_MAPBOX_TOKEN}
-        VITE_APP_NAME: TrailTracker
+    image: nginx:alpine
     restart: unless-stopped
     depends_on:
       - server
     ports:
       - "80:80"
+    volumes:
+      - ./client/dist:/usr/share/nginx/html:ro
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
 
 volumes:
   postgres_data:
