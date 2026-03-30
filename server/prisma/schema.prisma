@@ -43,18 +43,21 @@ model User {
   stravaRefreshToken String?
   stravaTokenExpiry  DateTime?
 
-  adventureModeEnabled        Boolean  @default(false)
-  adventureCharacterArchetype String?  // "wizard" | "archer" | "warrior"
-  adventureCharacterGender    String?  // "male" | "female"
-  adventureCharacterColor     String?  // "blue" | "green" | "red" | "yellow"
-  adventureDifficulty         String   @default("medium") // "easy" | "medium" | "hard" | "epic"
+  adventureModeEnabled        Boolean   @default(false)
+  adventureCharacterArchetype String?   // "wizard" | "archer" | "warrior"
+  adventureCharacterGender    String?   // "male" | "female"
+  adventureCharacterColor     String?   // "blue" | "green" | "red" | "yellow"
+  adventureDifficulty         String    @default("medium") // "easy" | "medium" | "hard" | "epic"
   adventureStartedAt          DateTime? // when adventure mode was first enabled
-  adventureTotalXp            Int      @default(0) // cumulative XP earned since adventureStartedAt
-  adventureQuestStreak        Int      @default(0) // consecutive weeks with a completed quest
+  adventureTotalXp            Float     @default(0) // cumulative XP (carries across campaigns)
+  adventureQuestStreak        Int       @default(0) // consecutive weeks with a completed quest
 
-  workouts Workout[]
-  quests   Quest[]
-  loot     Loot[]
+  workouts        Workout[]
+  campaigns       Campaign[]
+  weeklyProgress  WeeklyProgress[]
+  cardHistory     CardHistory[]
+  loot            Loot[]
+  campaignBadges  CampaignBadge[]
 
   @@map("users")
 }
@@ -93,7 +96,8 @@ model Workout {
 
   stravaActivityId String? @unique
 
-  adventureClaimed Boolean @default(false) // true once the user has claimed this workout in adventure mode
+  // true once a story card has been auto-generated for this workout
+  adventureCardGenerated Boolean @default(false)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -144,31 +148,113 @@ model TrackPoint {
   @@map("track_points")
 }
 
-model Quest {
-  id            String   @id @default(cuid())
-  userId        String
-  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+// ── Campaign (12-week arc) ───────────────────────────────────────────────────
 
-  weekStart     DateTime // Monday 00:00:00 UTC
-  difficulty    String   // "easy" | "medium" | "hard" | "epic"
-  targetSeconds Int      // 3600 | 18000 | 36000 | 72000
-  earnedSeconds Int      @default(0)
+model Campaign {
+  id             String    @id @default(cuid())
+  userId         String
+  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  status         String  @default("active") // "active" | "completed" | "failed"
-  waypoint1Hit   Boolean @default(false)
-  waypoint2Hit   Boolean @default(false)
-  waypoint3Hit   Boolean @default(false)
-  questCompleted Boolean @default(false)
+  campaignNumber Int       // 1, 2, 3… (which campaign is this for the user)
+  archetype      String    // "wizard" | "archer" | "warrior"
+  startDate      DateTime
+  endDate        DateTime?
+  currentWeek    Int       @default(1)  // 1-12
+  currentAct     Int       @default(1)  // 1-4
+  isActive       Boolean   @default(true)
 
-  narrativeBeats Json    @default("[]") // [{waypointNum, text, triggeredAt}]
+  weeklyProgress WeeklyProgress[]
+  badge          CampaignBadge?
 
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  createdAt DateTime @default(now())
+
+  @@unique([userId, campaignNumber])
+  @@index([userId, isActive])
+  @@map("campaigns")
+}
+
+// ── Weekly Quest Progress (replaces Quest) ───────────────────────────────────
+
+model WeeklyProgress {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  campaignId String
+  campaign   Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+
+  weekNumber     Int      // 1-12
+  weekStart      DateTime // Monday 00:00:00 UTC
+  weekEnd        DateTime // weekStart + 7 days
+  difficulty     String   // "easy" | "medium" | "hard" | "epic"
+  targetMinutes  Int      // 60 | 240 | 600 | 900
+  earnedMinutes  Float    @default(0)
+  earnedXp       Float    @default(0) // XP from workouts (after multiplier, tracks pre-soft-cap total for cap calc)
+  questBonusXp   Float    @default(0) // bonus XP awarded on quest completion
+  questStatus    String   @default("active") // "active" | "completed" | "missed"
+  storyBeatsServed Int    @default(0) // 0-7; once 7, extras get encore cards
+  workoutCount   Int      @default(0)
+
+  cardHistory CardHistory[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@unique([userId, weekStart])
   @@index([userId, weekStart(sort: Desc)])
-  @@map("quests")
+  @@index([campaignId, weekNumber])
+  @@map("weekly_progress")
 }
+
+// ── Seeded story card templates ───────────────────────────────────────────────
+// Card types: CHALLENGE | REFLECTION | RELEASE | CONNECTION | MILESTONE |
+//             WILDCARD | QUEST_COMPLETE | QUEST_MISSED | CAMPAIGN_ARC |
+//             CAMPAIGN_COMPLETE | CAMPAIGN_CONSOLATION | ENCORE | LAZY
+
+model StoryCard {
+  id           String  @id @default(cuid())
+  archetype    String  // "wizard" | "archer" | "warrior" | "any" (for generic pool)
+  weekNumber   Int?    // 1-12; null for generic cards (lazy/encore/campaign-level)
+  actNumber    Int?    // 1-4; set for CAMPAIGN_ARC cards
+  cardType     String  // see comment above
+  beatNumber   Int?    // 1-7 for typed story beats; null for others
+  title        String
+  narrative    String
+  playerPrompt String?
+  questTheme   String? // e.g. "The Locked Library"
+  isGeneric    Boolean @default(false) // true for lazy/encore pool cards
+
+  cardHistory CardHistory[]
+
+  createdAt DateTime @default(now())
+
+  @@index([archetype, weekNumber, cardType])
+  @@index([cardType, isGeneric])
+  @@map("story_cards")
+}
+
+// ── Card delivery history ─────────────────────────────────────────────────────
+
+model CardHistory {
+  id               String          @id @default(cuid())
+  userId           String
+  user             User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  storyCardId      String
+  storyCard        StoryCard       @relation(fields: [storyCardId], references: [id])
+  weeklyProgressId String?
+  weeklyProgress   WeeklyProgress? @relation(fields: [weeklyProgressId], references: [id])
+  workoutId        String?         // workout that triggered this card (null for quest/campaign cards)
+
+  workoutDurationMinutes Float?
+  xpEarned              Float    @default(0)
+  seenAt                DateTime? // null = pending (not yet viewed by user)
+  deliveredAt           DateTime @default(now())
+
+  @@index([userId, seenAt])
+  @@index([userId, deliveredAt(sort: Desc)])
+  @@map("card_history")
+}
+
+// ── Loot drops ────────────────────────────────────────────────────────────────
 
 model Loot {
   id        String   @id @default(cuid())
@@ -177,9 +263,31 @@ model Loot {
 
   itemSlug  String   // e.g. "copper_ring"
   rarity    String   // "common" | "uncommon" | "rare" | "epic" | "legendary"
-  source    String   // "quest_completion" | "streak_bonus"
+  source    String   // "quest_completion" | "streak_bonus" | "campaign_completion" | "campaign_consolation"
   earnedAt  DateTime @default(now())
 
   @@index([userId, earnedAt(sort: Desc)])
   @@map("loot")
+}
+
+// ── Campaign completion badges (permanent, shown in Treasure Chest) ───────────
+
+model CampaignBadge {
+  id         String    @id @default(cuid())
+  userId     String
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  campaignId String?   @unique
+  campaign   Campaign? @relation(fields: [campaignId], references: [id])
+
+  campaignNumber   Int
+  archetype        String  // "wizard" | "archer" | "warrior"
+  difficulty       String  // "easy" | "medium" | "hard" | "epic"
+  weeksCompleted   Int     // out of 12
+  questsCompleted  Int     // weekly quests completed during this campaign
+  isFullCompletion Boolean @default(false) // true if all 12 weeks quest-completed
+
+  earnedAt DateTime @default(now())
+
+  @@index([userId, earnedAt(sort: Desc)])
+  @@map("campaign_badges")
 }

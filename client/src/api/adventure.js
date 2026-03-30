@@ -11,10 +11,14 @@ export const adventureApi = {
     api.patch('/adventure/difficulty', { difficulty }).then((r) => r.data),
   resetQuest: () =>
     api.delete('/adventure/quest').then((r) => r.data),
+  getPendingCards: () =>
+    api.get('/adventure/cards/pending').then((r) => r.data),
+  markCardsSeen: (cardIds) =>
+    api.patch('/adventure/cards/seen', { cardIds }).then((r) => r.data),
   getLoot: () =>
     api.get('/adventure/loot').then((r) => r.data),
+  getCampaignBadges: () =>
+    api.get('/adventure/badges').then((r) => r.data),
   getWorld: () =>
     api.get('/adventure/world').then((r) => r.data),
-  claim: () =>
-    api.post('/adventure/claim').then((r) => r.data),
 };

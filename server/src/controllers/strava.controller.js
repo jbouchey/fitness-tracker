@@ -73,7 +73,11 @@ const webhookEvent = (req, res) => {
       });
       if (!user) return;
 
-      await importStravaActivity(user.id, object_id);
+      const workout = await importStravaActivity(user.id, object_id);
+      if (workout) {
+        const { processWorkoutReward } = require('../rpg/campaignService');
+        await processWorkoutReward(prisma, user.id, workout);
+      }
     } catch (err) {
       console.error('[Strava webhook] Failed to import activity:', err);
     }

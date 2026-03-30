@@ -1,34 +1,43 @@
-// XP needed to complete level N (reach level N from N-1)
-export function xpForLevel(n) {
-  return n * 4;
+// XP cost per level — must mirror server/src/rpg/xpEngine.js
+function xpCostForLevel(level) {
+  if (level <= 25) return 3 + level * 0.5;
+  if (level <= 50) return 10 + (level - 25) * 1.5;
+  if (level <= 70) return 40 + (level - 50) * 4;
+  if (level <= 85) {
+    const x = level - 70;
+    return Math.floor(120 + x * 10 + Math.pow(x, 1.8));
+  }
+  const x = level - 85;
+  return Math.floor(400 + x * 25 + Math.pow(x, 2.5));
 }
 
-// Cumulative XP required to have reached level N
-export function totalXpForLevel(n) {
-  return 2 * n * (n + 1);
-}
+// Build cumulative XP table once at module load
+const XP_TABLE = (() => {
+  const table = [];
+  let cumulative = 0;
+  for (let level = 1; level <= 99; level++) {
+    cumulative += xpCostForLevel(level);
+    table.push({ level, cost: xpCostForLevel(level), cumulative });
+  }
+  return table;
+})();
 
 // Derive current level from total XP (capped at 99)
 export function calculateLevel(totalXp) {
-  let level = 1;
-  for (let n = 1; n <= 99; n++) {
-    if (totalXpForLevel(n) <= totalXp) {
-      level = n;
-    } else {
-      break;
-    }
+  for (const entry of XP_TABLE) {
+    if (totalXp < entry.cumulative) return entry.level;
   }
-  return Math.min(level, 99);
+  return 99;
 }
 
 // Returns level, XP within current level, XP needed for next level, and % progress
 export function xpProgress(totalXp) {
   const level = calculateLevel(totalXp);
   if (level >= 99) return { level: 99, currentXp: totalXp, neededXp: 0, pct: 100 };
-  const xpAtCurrentLevel = totalXpForLevel(level);
-  const xpAtNextLevel = totalXpForLevel(level + 1);
-  const currentXp = totalXp - xpAtCurrentLevel;
-  const neededXp = xpAtNextLevel - xpAtCurrentLevel;
+  const prevCumulative = level >= 2 ? XP_TABLE[level - 2].cumulative : 0;
+  const nextCumulative = XP_TABLE[level - 1].cumulative;
+  const currentXp = Math.round(totalXp - prevCumulative);
+  const neededXp = Math.round(nextCumulative - prevCumulative);
   const pct = Math.min(100, Math.round((currentXp / neededXp) * 100));
   return { level, currentXp, neededXp, pct };
 }

@@ -22,7 +22,7 @@ async function updateStreakAndGrantLoot(userId, questWeekStart) {
   const prevWeekStart = new Date(questWeekStart.getTime() - 7 * 24 * 60 * 60 * 1000);
 
   const [prevQuest, user] = await Promise.all([
-    prisma.quest.findFirst({ where: { userId, weekStart: prevWeekStart, status: 'completed' } }),
+    prisma.weeklyProgress.findFirst({ where: { userId, weekStart: prevWeekStart, questStatus: 'completed' } }),
     prisma.user.findUnique({ where: { id: userId }, select: { adventureQuestStreak: true } }),
   ]);
 

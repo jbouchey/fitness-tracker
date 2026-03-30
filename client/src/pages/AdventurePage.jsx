@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, Navigate } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 import { adventureApi } from '../api/adventure';
@@ -33,33 +33,23 @@ const WORKOUT_EMOJI = {
 
 const DAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
-// How long each tile lights up during the claim animation (ms)
-const TILE_ANIM_DELAY = 600;
 
 export default function AdventurePage() {
   const navigate = useNavigate();
   const { user, updateUser } = useAuthStore();
 
   // Data state
-  const [quest, setQuest] = useState(null);
-  const [, setQuestLoading] = useState(true);
   const [worldData, setWorldData] = useState(null);
+  const [pendingCards, setPendingCards] = useState([]);
   const [recentWorkout, setRecentWorkout] = useState(null);
 
-  // Claim flow state
-  // phase: 'idle' | 'claiming' | 'animating' | 'stories' | 'done'
-  const [claimPhase, setClaimPhase] = useState('idle');
-  const [claimResult, setClaimResult] = useState(null);
-  // animatedTile: the highest tile index currently lit during animation
-  const [animatedTile, setAnimatedTile] = useState(null);
-  // storyIndex: which story card the user is on
-  const [storyIndex, setStoryIndex] = useState(0);
+  // Pending-card modal state
+  const [showCards, setShowCards] = useState(false);
+  const [cardIndex, setCardIndex] = useState(0);
 
   // Misc UI state
   const [exiting, setExiting] = useState(false);
   const [resetting, setResetting] = useState(false);
-
-  const animTimers = useRef([]);
 
   if (!user?.adventureCharacterArchetype) {
     return <Navigate to="/adventure/select" replace />;
@@ -75,100 +65,36 @@ export default function AdventurePage() {
   const milestoneTitle = getMilestoneTitle(level);
 
   function loadAll() {
-    setQuestLoading(true);
     Promise.all([
-      adventureApi.getQuest().then(({ quest: q }) => setQuest(q)).catch(() => {}),
       adventureApi.getWorld().then((d) => setWorldData(d)).catch(() => {}),
+      adventureApi.getPendingCards().then(({ cards }) => setPendingCards(cards ?? [])).catch(() => {}),
       workoutsApi.getAll({ limit: 1, page: 1 }).then(({ workouts }) => setRecentWorkout(workouts?.[0] ?? null)).catch(() => {}),
-    ]).finally(() => setQuestLoading(false));
+    ]);
   }
 
   useEffect(() => { loadAll(); }, []);
 
-  // Derived world values
-  const claimedDays  = claimPhase === 'idle' ? (worldData?.claimedDays ?? 0) : (claimResult?.claimedDays ?? 0);
-  const pendingDays  = worldData?.pendingDays ?? 0;
-  const pendingCount = worldData?.pendingCount ?? 0;
-
-  // During animation, show partial tile progress
-  const displayedTile = claimPhase === 'animating' && animatedTile !== null
-    ? animatedTile
-    : claimedDays;
-
-  const currentTile = Math.min(displayedTile, 6);
+  // Derived values
+  const claimedDays    = worldData?.claimedDays ?? 0;
+  const currentTile    = Math.min(claimedDays, 6);
   const regionSequence = REGION_SEQUENCE[color] ?? REGION_SEQUENCE.blue;
-  const questComplete = (claimPhase === 'done' ? claimResult?.quest : quest)?.status === 'completed';
+  const questComplete  = worldData?.quest?.status === 'completed';
 
-  // ── Claim flow ──────────────────────────────────────────────────────────────
+  // ── Pending-card modal ───────────────────────────────────────────────────────
 
-  async function handleClaim() {
-    setClaimPhase('claiming');
-    let result;
-    try {
-      result = await adventureApi.claim();
-    } catch {
-      setClaimPhase('idle');
-      return;
-    }
+  function openCards() { setCardIndex(0); setShowCards(true); }
 
-    setClaimResult(result);
-
-    // Start tile animation: advance one tile per TILE_ANIM_DELAY ms
-    const prev = result.previousClaimedDays;
-    const next = result.claimedDays;
-
-    if (next > prev) {
-      setClaimPhase('animating');
-      setAnimatedTile(prev);
-
-      animTimers.current.forEach(clearTimeout);
-      animTimers.current = [];
-
-      for (let i = prev + 1; i <= next; i++) {
-        const t = setTimeout(() => {
-          setAnimatedTile(i);
-          if (i === next) {
-            // All tiles done — move to story cards (or done if no beats)
-            setTimeout(() => {
-              if (result.newBeats?.length > 0) {
-                setStoryIndex(0);
-                setClaimPhase('stories');
-              } else {
-                setClaimPhase('done');
-                finaliseAfterClaim(result);
-              }
-            }, 400);
-          }
-        }, (i - prev) * TILE_ANIM_DELAY);
-        animTimers.current.push(t);
-      }
+  async function advanceCard() {
+    if (cardIndex < pendingCards.length - 1) {
+      setCardIndex(cardIndex + 1);
     } else {
-      // No new tiles (e.g. same day, second workout) — go straight to stories
-      if (result.newBeats?.length > 0) {
-        setStoryIndex(0);
-        setClaimPhase('stories');
-      } else {
-        setClaimPhase('done');
-        finaliseAfterClaim(result);
-      }
+      // Mark all as seen, close modal, refresh
+      const ids = pendingCards.map((c) => c.id);
+      setShowCards(false);
+      setPendingCards([]);
+      try { await adventureApi.markCardsSeen(ids); } catch { /* ignore */ }
+      adventureApi.getWorld().then((d) => setWorldData(d)).catch(() => {});
     }
-  }
-
-  function advanceStory() {
-    const beats = claimResult?.newBeats ?? [];
-    if (storyIndex < beats.length - 1) {
-      setStoryIndex(storyIndex + 1);
-    } else {
-      setClaimPhase('done');
-      finaliseAfterClaim(claimResult);
-    }
-  }
-
-  function finaliseAfterClaim(result) {
-    // Refresh world data so the pending count resets
-    adventureApi.getWorld().then((d) => setWorldData(d)).catch(() => {});
-    // Update quest from result
-    if (result?.quest) setQuest(result.quest);
   }
 
   // ── Other handlers ──────────────────────────────────────────────────────────
@@ -189,25 +115,14 @@ export default function AdventurePage() {
     setResetting(true);
     try {
       await adventureApi.resetQuest();
-      setClaimPhase('idle');
-      setClaimResult(null);
-      setAnimatedTile(null);
+      setPendingCards([]);
+      setShowCards(false);
       loadAll();
     } catch { /* ignore */ }
     finally { setResetting(false); }
   }
 
-  // ── Render helpers ──────────────────────────────────────────────────────────
-
-  const displayQuest = (claimPhase === 'done' || claimPhase === 'stories') && claimResult?.quest
-    ? claimResult.quest
-    : quest;
-
-  const questPct = displayQuest
-    ? Math.min(100, Math.round((displayQuest.earnedSeconds / displayQuest.targetSeconds) * 100))
-    : 0;
-
-  // ── Journey strip (shared between normal view and animation) ────────────────
+  // ── Journey strip ────────────────────────────────────────────────────────────
 
   function JourneyStrip({ activeTiles }) {
     const tile = Math.min(activeTiles, 6);
@@ -290,84 +205,64 @@ export default function AdventurePage() {
     );
   }
 
-  // ── Story card overlay ──────────────────────────────────────────────────────
+  // ── Pending-card modal ───────────────────────────────────────────────────────
 
-  if (claimPhase === 'stories') {
-    const beats = claimResult?.newBeats ?? [];
-    const beat = beats[storyIndex];
-    const isLast = storyIndex === beats.length - 1;
-    const isQuestComplete = claimResult?.questJustCompleted && isLast;
-
+  if (showCards && pendingCards.length > 0) {
+    const card = pendingCards[cardIndex];
+    const isLast = cardIndex === pendingCards.length - 1;
     return (
       <div className="fixed inset-0 bg-black/90 flex items-end justify-center z-50 p-4">
         <div className="w-full max-w-md">
-          {/* Journey strip mini — shows final tile position */}
-          <div className="mb-4">
-            <JourneyStrip activeTiles={claimResult?.claimedDays ?? claimedDays} />
-          </div>
-
-          {/* Story card */}
           <div className="bg-gray-900 border border-gray-700 rounded-2xl p-6">
             {/* Progress dots */}
-            {beats.length > 1 && (
+            {pendingCards.length > 1 && (
               <div className="flex justify-center gap-1.5 mb-4">
-                {beats.map((_, i) => (
+                {pendingCards.map((_, i) => (
                   <div
                     key={i}
-                    className={`w-1.5 h-1.5 rounded-full transition-all ${i === storyIndex ? 'bg-white w-4' : i < storyIndex ? 'bg-gray-500' : 'bg-gray-700'}`}
+                    className={`h-1.5 rounded-full transition-all ${i === cardIndex ? 'w-4 bg-white' : i < cardIndex ? 'w-1.5 bg-gray-500' : 'w-1.5 bg-gray-700'}`}
                   />
                 ))}
               </div>
             )}
 
-            {/* Quest complete banner */}
-            {isQuestComplete && (
-              <div className="bg-green-900/40 border border-green-700 rounded-lg px-3 py-2 mb-4 text-center">
-                <p className="text-sm font-bold text-green-400">\u2728 Quest Complete!</p>
+            {/* Card type badge */}
+            <p className="text-xs text-indigo-400 uppercase tracking-widest mb-1">{card?.cardType?.replace('_', ' ')}</p>
+            <p className="text-base font-bold text-white mb-3">{card?.title}</p>
+
+            {/* Workout summary (if available) */}
+            {card?.workoutType && (
+              <div className="flex items-center gap-3 mb-4">
+                <span className="text-2xl">{WORKOUT_EMOJI[card.workoutType] ?? '\u26A1\uFE0F'}</span>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-white truncate">{card.workoutName || formatWorkoutType(card.workoutType)}</p>
+                  <p className="text-xs text-gray-400">
+                    {card.distanceMiles > 0 ? `${formatDistance(card.distanceMiles)} \u00B7 ` : ''}
+                    {formatDuration(card.elapsedSeconds)}
+                  </p>
+                </div>
+                <div className="text-right flex-shrink-0">
+                  <p className="text-xs text-indigo-400 font-semibold">+{Math.round(card.xpEarned)} XP</p>
+                  <p className="text-xs text-gray-500">{cardIndex + 1} of {pendingCards.length}</p>
+                </div>
               </div>
             )}
 
-            {/* Workout summary */}
-            <div className="flex items-center gap-3 mb-4">
-              <span className="text-3xl">{WORKOUT_EMOJI[beat?.workoutType] ?? '\u26A1\uFE0F'}</span>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-bold text-white truncate">{beat?.workoutName || formatWorkoutType(beat?.workoutType)}</p>
-                <p className="text-xs text-gray-400">
-                  {beat?.distanceMiles > 0 ? `${formatDistance(beat.distanceMiles)} \u00B7 ` : ''}
-                  {formatDuration(beat?.elapsedSeconds)}
-                </p>
-              </div>
-              <div className="text-xs text-gray-500 text-right flex-shrink-0">
-                Expedition {storyIndex + 1} of {beats.length}
-              </div>
-            </div>
-
             {/* Narrative */}
-            <p className="text-sm text-gray-300 italic leading-relaxed mb-6">
-              &ldquo;{beat?.text}&rdquo;
+            <p className="text-sm text-gray-300 italic leading-relaxed mb-4">
+              &ldquo;{card?.narrative}&rdquo;
             </p>
 
-            {/* Quest progress bar */}
-            {displayQuest && (
-              <div className="mb-5">
-                <div className="flex justify-between text-xs text-gray-500 mb-1">
-                  <span>Quest Progress</span>
-                  <span>{formatDuration(displayQuest.earnedSeconds)} / {formatDuration(displayQuest.targetSeconds)}</span>
-                </div>
-                <div className="bg-gray-700 rounded-full h-1.5">
-                  <div
-                    className={`h-1.5 rounded-full transition-all duration-500 ${displayQuest.status === 'completed' ? 'bg-green-500' : 'bg-indigo-500'}`}
-                    style={{ width: `${questPct}%` }}
-                  />
-                </div>
-              </div>
+            {/* Player prompt */}
+            {card?.playerPrompt && (
+              <p className="text-xs text-indigo-300 mb-4 border-l-2 border-indigo-700 pl-3 italic">{card.playerPrompt}</p>
             )}
 
             <button
-              onClick={advanceStory}
+              onClick={advanceCard}
               className="w-full py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-sm transition-colors"
             >
-              {isLast ? (isQuestComplete ? 'Claim Your Rewards \u2192' : 'Return to Adventure \u2192') : 'Continue \u2192'}
+              {isLast ? 'Return to Adventure \u2192' : 'Continue \u2192'}
             </button>
           </div>
         </div>
@@ -416,32 +311,22 @@ export default function AdventurePage() {
         </div>
       </div>
 
-      {/* Pending claim prompt */}
-      {pendingCount > 0 && claimPhase === 'idle' && (
+      {/* Pending story cards banner */}
+      {pendingCards.length > 0 && (
         <div className="rounded-xl bg-indigo-600 p-4 mb-4 flex items-center gap-4">
-          <div className="text-3xl flex-shrink-0">\u2694\uFE0F</div>
+          <div className="text-3xl flex-shrink-0">&#x1F4DC;</div>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-bold text-white">
-              {pendingCount} expedition{pendingCount !== 1 ? 's' : ''} await{pendingCount === 1 ? 's' : ''}
+              {pendingCards.length} new story card{pendingCards.length !== 1 ? 's' : ''}
             </p>
-            <p className="text-xs text-indigo-200 mt-0.5">
-              {pendingDays} new day{pendingDays !== 1 ? 's' : ''} of adventure ready to claim
-            </p>
+            <p className="text-xs text-indigo-200 mt-0.5">Your recent expeditions have a tale to tell</p>
           </div>
           <button
-            onClick={handleClaim}
+            onClick={openCards}
             className="flex-shrink-0 px-4 py-2 rounded-lg bg-white text-indigo-700 font-bold text-sm hover:bg-indigo-50 transition-colors"
           >
-            Continue
+            Read
           </button>
-        </div>
-      )}
-
-      {/* Claiming spinner */}
-      {claimPhase === 'claiming' && (
-        <div className="rounded-xl bg-gray-800 border border-gray-700 p-4 mb-4 flex items-center gap-3">
-          <div className="w-5 h-5 rounded-full border-2 border-indigo-400 border-t-transparent animate-spin flex-shrink-0" />
-          <p className="text-sm text-gray-300">Preparing your expeditions\u2026</p>
         </div>
       )}
 
@@ -449,8 +334,7 @@ export default function AdventurePage() {
       <div className="mb-4">
         <JourneyStrip activeTiles={currentTile} />
 
-        {/* Recent workout — shown only in idle/done state, not during animation */}
-        {(claimPhase === 'idle' || claimPhase === 'done') && recentWorkout && (
+        {recentWorkout && (
           <div className="mt-2 bg-gray-900 border border-gray-800 rounded-xl px-4 pb-4 pt-0">
             <div
               className="bg-gray-800 rounded-lg p-3 border border-gray-700 cursor-pointer hover:bg-gray-750 transition-colors"
@@ -477,7 +361,6 @@ export default function AdventurePage() {
         )}
       </div>
 
-      {/* Quest card */}
       {/* Top-level nav */}
       <div className="grid grid-cols-3 gap-2 mb-4">
         <button

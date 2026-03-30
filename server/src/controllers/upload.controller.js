@@ -95,6 +95,16 @@ const uploadWorkout = catchAsync(async (req, res) => {
   });
 
   res.status(201).json({ workout: fullWorkout, message: 'Workout uploaded successfully.' });
+
+  // Fire-and-forget: RPG reward processing
+  setImmediate(async () => {
+    try {
+      const { processWorkoutReward } = require('../rpg/campaignService');
+      await processWorkoutReward(prisma, req.user.id, fullWorkout);
+    } catch (err) {
+      console.error('[RPG] upload reward failed:', err);
+    }
+  });
 });
 
 function formatWorkoutType(type) {
