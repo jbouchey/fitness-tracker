@@ -10,16 +10,19 @@ ENV VITE_API_URL=$VITE_API_URL
 ENV VITE_MAPBOX_TOKEN=$VITE_MAPBOX_TOKEN
 ENV VITE_APP_NAME=$VITE_APP_NAME
 
-COPY client/package.json client/package-lock.json* ./
-RUN npm ci
+# Use the monorepo root lockfile for reproducible installs
+COPY package.json package-lock.json ./
+COPY client/package.json ./client/
 
-COPY client/ .
+RUN npm ci --workspace=client
 
-RUN npm run build
+COPY client/ ./client/
+
+RUN npm run build --workspace=client
 
 FROM nginx:alpine
 
-COPY --from=builder /app/dist /usr/share/nginx/html
+COPY --from=builder /app/client/dist /usr/share/nginx/html
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 
 EXPOSE 80
