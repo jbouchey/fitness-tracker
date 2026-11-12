@@ -30,11 +30,21 @@ services:
       NODE_ENV: production
       CLIENT_URL: ${CLIENT_URL}
       APP_URL: ${APP_URL}
-      MAX_FILE_SIZE_MB: ${MAX_FILE_SIZE_MB:-50}
+      # Keep in step with client_max_body_size in nginx.conf
+      MAX_FILE_SIZE_MB: ${MAX_FILE_SIZE_MB:-25}
+      # Proxies in front of the server: nginx alone = 1, Cloudflare Tunnel + nginx = 2
+      TRUST_PROXY: ${TRUST_PROXY:-2}
+      # Set to "false" to stop new sign-ups
+      ALLOW_REGISTRATION: ${ALLOW_REGISTRATION:-true}
+      # Set to "true" so new accounts must confirm their email before uploading
+      REQUIRE_EMAIL_VERIFICATION: ${REQUIRE_EMAIL_VERIFICATION:-false}
+      UPLOADS_PER_HOUR: ${UPLOADS_PER_HOUR:-30}
+      EMAIL_FROM: ${EMAIL_FROM:-}
       RESEND_API_KEY: ${RESEND_API_KEY}
       STRAVA_CLIENT_ID: ${STRAVA_CLIENT_ID}
       STRAVA_CLIENT_SECRET: ${STRAVA_CLIENT_SECRET}
       STRAVA_WEBHOOK_VERIFY_TOKEN: ${STRAVA_WEBHOOK_VERIFY_TOKEN}
+      STRAVA_WEBHOOK_SUBSCRIPTION_ID: ${STRAVA_WEBHOOK_SUBSCRIPTION_ID:-}
     expose:
       - "3001"
 

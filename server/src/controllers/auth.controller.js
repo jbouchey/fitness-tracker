@@ -2,6 +2,7 @@ const { z } = require('zod');
 const authService = require('../services/auth.service');
 const { catchAsync } = require('../middleware/errorHandler');
 const prisma = require('../config/database');
+const { ALLOW_REGISTRATION } = require('../config/env');
 
 const registerSchema = z.object({
   email: z.string().email(),
@@ -15,6 +16,9 @@ const loginSchema = z.object({
 });
 
 const register = catchAsync(async (req, res) => {
+  if (!ALLOW_REGISTRATION) {
+    return res.status(403).json({ error: 'Sign-ups are closed right now.', code: 'REGISTRATION_CLOSED' });
+  }
   const data = registerSchema.parse(req.body);
   const result = await authService.register(data);
   res.status(201).json(result);

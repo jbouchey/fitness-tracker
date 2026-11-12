@@ -9,4 +9,16 @@ function verifyToken(token) {
   return jwt.verify(token, JWT_SECRET);
 }
 
-module.exports = { signToken, verifyToken };
+// Short-lived signed value for the Strava OAuth round trip. The callback is a
+// public URL, so the user id must not be accepted as plain text.
+function signStravaState(userId) {
+  return jwt.sign({ userId, purpose: 'strava-oauth' }, JWT_SECRET, { expiresIn: '10m' });
+}
+
+function verifyStravaState(state) {
+  const payload = jwt.verify(state, JWT_SECRET);
+  if (payload.purpose !== 'strava-oauth' || !payload.userId) throw new Error('Wrong token purpose');
+  return payload.userId;
+}
+
+module.exports = { signToken, verifyToken, signStravaState, verifyStravaState };

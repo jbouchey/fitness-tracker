@@ -11,6 +11,8 @@ async function authenticate(req, res, next) {
   let payload;
   try {
     payload = verifyToken(token);
+    // Tokens minted for other jobs (e.g. the Strava OAuth state) are not sessions.
+    if (payload.purpose) throw new Error('Not a session token');
   } catch {
     return res.status(401).json({ error: 'Invalid or expired token.' });
   }
