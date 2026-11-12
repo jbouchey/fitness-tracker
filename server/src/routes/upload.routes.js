@@ -1,9 +1,10 @@
 const { Router } = require('express');
+const rateLimit = require('express-rate-limit');
 const { uploadWorkout } = require('../controllers/upload.controller');
 const authenticate = require('../middleware/authenticate');
 const upload = require('../middleware/upload');
 const requireEmailVerified = require('../middleware/requireEmailVerified');
-const { MAX_FILE_SIZE_MB } = require('../config/env');
+const { MAX_FILE_SIZE_MB, UPLOADS_PER_HOUR } = require('../config/env');
 
 const router = Router();
 
@@ -20,6 +21,17 @@ function handleUpload(req, res, next) {
   });
 }
 
-router.post('/', authenticate, requireEmailVerified, handleUpload, uploadWorkout);
+// Per-account ceiling on uploads. Runs after authenticate so it can key on the
+// user, and before multer so a blocked request never has its file read into memory.
+const uploadLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: UPLOADS_PER_HOUR,
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req) => `user:${req.user.id}`,
+  message: { error: 'Upload limit reached. Please try again in an hour.' },
+});
+
+router.post('/', authenticate, requireEmailVerified, uploadLimiter, handleUpload, uploadWorkout);
 
 module.exports = router;

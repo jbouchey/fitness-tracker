@@ -19,4 +19,14 @@ module.exports = {
   STRAVA_CLIENT_ID:            process.env.STRAVA_CLIENT_ID            || null,
   STRAVA_CLIENT_SECRET:        process.env.STRAVA_CLIENT_SECRET        || null,
   STRAVA_WEBHOOK_VERIFY_TOKEN: process.env.STRAVA_WEBHOOK_VERIFY_TOKEN || null,
+  // Optional: the id Strava returned when the webhook subscription was created.
+  // When set, webhook events carrying any other subscription id are ignored.
+  STRAVA_WEBHOOK_SUBSCRIPTION_ID: process.env.STRAVA_WEBHOOK_SUBSCRIPTION_ID || null,
+  // How many reverse proxies sit in front of the server (nginx = 1, Cloudflare Tunnel + nginx = 2).
+  // Rate limits are per visitor address, so this has to be right or every visitor shares one limit.
+  TRUST_PROXY: Number.isInteger(parseInt(process.env.TRUST_PROXY)) ? parseInt(process.env.TRUST_PROXY) : 1,
+  // Set to "false" to stop new sign-ups without taking the app down.
+  ALLOW_REGISTRATION: process.env.ALLOW_REGISTRATION !== 'false',
+  UPLOADS_PER_HOUR: parseInt(process.env.UPLOADS_PER_HOUR) || 30,
+  EMAIL_FROM: process.env.EMAIL_FROM || 'TrailTracker <noreply@notifications.sierradegroff.com>',
 };

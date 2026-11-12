@@ -60,6 +60,18 @@ Fill in each value:
 
 > **Tip:** Assign your home server a static LAN IP in your router settings so it doesn't change after a reboot.
 
+Optional settings, all with safe defaults:
+
+| Variable | What it does |
+|---|---|
+| `TRUST_PROXY` | How many proxies sit in front of the server. Defaults to `2` (Cloudflare Tunnel + Nginx). Use `1` if people reach Nginx directly. If this is too low, every visitor shares one rate limit and a few wrong passwords from anyone lock everybody out. |
+| `ALLOW_REGISTRATION` | Set to `false` to stop new sign-ups without taking the app down. |
+| `REQUIRE_EMAIL_VERIFICATION` | Set to `true` so new accounts must confirm their email before they can upload. Needs `RESEND_API_KEY`, and existing accounts must already be verified. |
+| `UPLOADS_PER_HOUR` | Upload limit per account. Defaults to `30`. |
+| `MAX_FILE_SIZE_MB` | Largest upload. Defaults to `25`. If you raise it, raise `client_max_body_size` in `nginx.conf` to match. |
+| `EMAIL_FROM` | The "from" line on verification and reset emails. Must be on a domain verified in Resend. |
+| `STRAVA_WEBHOOK_SUBSCRIPTION_ID` | The `id` Strava returned when you registered the webhook. When set, events from any other subscription are ignored. |
+
 ---
 
 ## 3. Migrate your Railway PostgreSQL database

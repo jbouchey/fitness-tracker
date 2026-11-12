@@ -1,5 +1,5 @@
 const { Resend } = require('resend');
-const { RESEND_API_KEY } = require('../config/env');
+const { RESEND_API_KEY, EMAIL_FROM } = require('../config/env');
 
 const resend = RESEND_API_KEY ? new Resend(RESEND_API_KEY) : null;
 
@@ -10,7 +10,7 @@ async function sendEmail(to, subject, html) {
     return;
   }
   await resend.emails.send({
-    from: 'TrailTracker <noreply@notifications.sierradegroff.com>',
+    from: EMAIL_FROM,
     to,
     subject,
     html,
