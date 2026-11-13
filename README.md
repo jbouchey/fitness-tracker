@@ -1,3 +1,16 @@
+# TrailTracker
+
+A fitness dashboard I built for tracking trail runs and workouts: upload a Garmin FIT or GPX file and get route maps, elevation, heart rate and pace charts.
+
+**What it shows:** full-stack web app · React, Node, PostgreSQL · FIT/GPX parsing and maps · Built with AI coding tools (Claude Code)
+
+**Live app:** https://trailtracker.bouchey.dev
+
+## Why I built it
+I wanted to see how close I could get to a Strava-style dashboard, as one of my first projects with Claude Code. I also wanted to learn front-end patterns and data visualization by building something I would use myself.
+
+---
+
 # TrailTracker — Personal Fitness Tracker
 
 A full-stack web app for tracking trail runs and fitness workouts. Supports FIT (Garmin) and GPX file uploads with automatic metric extraction, GPS route maps, elevation profiles, and heart rate charts.
@@ -136,3 +149,7 @@ fitness-tracker/
 | `npm run build` | Build client for production |
 | `cd server && npx prisma studio` | Open database GUI |
 | `cd server && npx prisma migrate dev` | Run new migrations |
+
+---
+
+Part of [bouchey.dev](https://bouchey.dev).
