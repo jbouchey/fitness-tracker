@@ -47,13 +47,13 @@ Fill in each value:
 | `POSTGRES_PASSWORD` | Make up any strong password — this is only used between containers, not exposed externally |
 | `JWT_SECRET` | Copy `JWT_SECRET` from your `server/.env` |
 | `JWT_EXPIRES_IN` | `7d` (leave as-is) |
-| `CLIENT_URL` | Your home server's LAN IP, e.g. `http://192.168.0.236` (see note below) |
+| `CLIENT_URL` | Your home server's LAN IP, e.g. `http://<your-server-ip>` (see note below) |
 | `APP_URL` | Same as `CLIENT_URL` |
 | `RESEND_API_KEY` | Copy from `server/.env` if present |
 | `STRAVA_CLIENT_ID` | Copy from `server/.env` if present |
 | `STRAVA_CLIENT_SECRET` | Copy from `server/.env` if present |
 | `STRAVA_WEBHOOK_VERIFY_TOKEN` | Copy from `server/.env` if present |
-| `VITE_API_URL` | `http://192.168.0.236/api` — same IP as above, Nginx handles the `/api` routing |
+| `VITE_API_URL` | `http://<your-server-ip>/api` — same IP as above, Nginx handles the `/api` routing |
 | `VITE_MAPBOX_TOKEN` | Copy `VITE_MAPBOX_TOKEN` from your `client/.env` |
 
 > **Finding your home server's IP:** On the server, run `ip addr show` (Linux) or check your router's DHCP table. It'll be something like `192.168.0.x`. Use that IP for `CLIENT_URL`, `APP_URL`, and `VITE_API_URL`.
